@@ -64,6 +64,8 @@ class DeltaRequest:
     revspec: str | None
     extensions: tuple[str, ...] = ()
     exclude_patterns: tuple[str, ...] = ()
+    #: Gitignore-style paths to keep; empty keeps every path.
+    include_paths: tuple[str, ...] = ()
 
 
 class ChangeHealthDeltaService:
@@ -367,11 +369,12 @@ class ChangeHealthDeltaService:
 
 
 def _filter(changes: list[FileChange], request: DeltaRequest) -> list[FileChange]:
-    """Apply the caller's extension and exclusion filters to the change set."""
+    """Apply the caller's extension, inclusion and exclusion filters to the change set."""
     return filter_changes(
         changes,
         extensions=request.extensions,
         exclude_patterns=request.exclude_patterns,
+        include_paths=request.include_paths,
     )
 
 
