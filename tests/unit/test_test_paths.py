@@ -14,6 +14,7 @@ from repowise.core.test_paths import (
     is_test_path,
     is_test_related_path,
     is_test_support_path,
+    is_unambiguous_test_path,
 )
 
 # (path, language or None, expected classification)
@@ -158,3 +159,25 @@ def test_camel_prefix_rule_mirrors_the_suffix_rule() -> None:
     # leak onto an unrelated extension.
     assert not is_test_path("src/testkeymap.dpr", "pascal")
     assert not is_test_path("src/TestKeymap.txt", "pascal")
+
+
+@pytest.mark.parametrize(
+    ("path", "expected"),
+    [
+        ("tests/unit/test_engine.py", True),
+        ("tests/conftest.py", True),
+        ("packages/ui/__tests__/table.test.tsx", True),
+        ("src/test/java/FooTest.java", True),
+        ("pkg/server/handler_test.go", True),
+        # Named like tests, but production modules inside a source tree.
+        ("packages/core/src/repowise/core/test_paths.py", False),
+        ("packages/core/src/repowise/core/analysis/test_impact.py", False),
+        ("packages/core/src/repowise/core/distill/filters/test_output.py", False),
+        ("src/app/lib/format.test.ts", False),
+        ("src/app/lib/format.py", False),
+    ],
+)
+def test_unambiguous_test_paths_need_more_than_a_test_shaped_name_under_src(
+    path: str, expected: bool
+) -> None:
+    assert is_unambiguous_test_path(path) is expected

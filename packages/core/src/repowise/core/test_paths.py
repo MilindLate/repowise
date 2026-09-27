@@ -299,6 +299,24 @@ def is_test_related_path(path: str, language: str | None = None) -> bool:
     return _classify(path, language) != ""
 
 
+def is_unambiguous_test_path(path: str, language: str | None = None) -> bool:
+    """Whether *path* is test material beyond a naming coincidence.
+
+    For callers that *hide* something when the answer is yes, such as a
+    contract break whose only callers are tests. A test-shaped filename alone
+    does not qualify inside a ``src`` tree, where ``src/pkg/test_paths.py`` is a
+    production module named for what it does. It needs a test directory
+    (``tests/``, ``__tests__/``, ``src/test/java``) or to sit outside ``src``.
+    Ambiguous paths read as production, so the doubt surfaces the finding.
+    """
+    if not is_test_related_path(path, language):
+        return False
+    original, lowered = _parts(path)
+    if _is_test_dir(lowered[:-1], original[:-1], original[-1], language):
+        return True
+    return "src" not in lowered[:-1]
+
+
 def is_test_to_production_pair(
     code_path: str, partner_path: str, *, code_language: str | None = None
 ) -> bool:

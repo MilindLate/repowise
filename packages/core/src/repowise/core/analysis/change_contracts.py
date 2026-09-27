@@ -42,9 +42,11 @@ explicitly rather than reimplementing the walk.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import PurePosixPath
 from typing import Any
 
-from ..test_paths import is_test_related_path
+from ..ingestion.models import EXTENSION_TO_LANGUAGE
+from ..test_paths import is_unambiguous_test_path
 from .signature_effect import (
     EFFECT_COMPATIBLE,
     EFFECT_NONE,
@@ -86,6 +88,8 @@ class SymbolContractChange:
     is not part of this change -- the ones nobody is currently reviewing --
     production callers first. ``outside_test_callers`` and
     ``outside_production_callers`` split the same population, under the same cap.
+    A caller counts as a test only when its path leaves no doubt; an ambiguous
+    one counts as production, so the doubt surfaces the finding.
     """
 
     file: str
@@ -101,8 +105,11 @@ class SymbolContractChange:
     outside_callers_total: int = 0
     outside_test_callers: list[str] = field(default_factory=list)
     outside_production_callers: list[str] = field(default_factory=list)
-    #: What the change does to a caller: ``none`` | ``compatible`` |
-    #: ``breaking`` | ``unknown``. ``None`` unless ``change`` is a signature change.
+    outside_production_callers_total: int = 0
+    #: What the change does to a caller: ``compatible`` | ``breaking`` |
+    #: ``unknown``. ``None`` unless ``change`` is a signature change. A change
+    #: that reads ``none`` (same contract, different text) is not reported as a
+    #: signature change at all.
     signature_effect: str | None = None
     #: The specific difference, naming the parameter.
     signature_reason: str | None = None
@@ -279,6 +286,14 @@ def analyze_contract_impact(
         for name, facts in sorted(head_syms.items()):
             prior = base_syms.get(name)
             effect = None
+            if prior is not None and prior.signature != facts.signature:
+                effect = classify_signature_change(
+                    prior.signature, facts.signature, _language(path), facts.kind
+                )
+                # The text moved but the contract did not: fall through to the
+                # body check, so only a real edit inside the symbol is reported.
+                if effect.effect == EFFECT_NONE:
+                    effect = None
             if prior is None:
                 # A file with no base side at all (added by this change, or
                 # missing from the snapshot) would otherwise report every symbol
@@ -287,9 +302,8 @@ def analyze_contract_impact(
                 if not base_syms:
                     continue
                 change = CHANGE_ADDED
-            elif prior.signature != facts.signature:
+            elif effect is not None:
                 change = CHANGE_SIGNATURE
-                effect = classify_signature_change(prior.signature, facts.signature)
             elif _overlaps(facts.start_line, facts.end_line, ranges):
                 change = CHANGE_BODY
             else:
@@ -319,10 +333,11 @@ _CHANGE_ORDER = {CHANGE_REMOVED: 0, CHANGE_SIGNATURE: 1, CHANGE_ADDED: 2, CHANGE
 
 
 def _rank(c: SymbolContractChange) -> tuple:
-    """Breaking changes first, then by how many outside callers they reach."""
+    """Breaking changes first, then by how much production code they reach."""
     return (
         not c.is_breaking,
         _CHANGE_ORDER.get(c.change, 9),
+        -c.outside_production_callers_total,
         -c.outside_callers_total,
         c.file,
         c.name,
@@ -345,7 +360,7 @@ def _with_callers(
         caller_file = _containing_file(caller)
         if caller_file in changed_set:
             inside += 1
-        elif is_test_related_path(caller_file):
+        elif is_unambiguous_test_path(caller_file):
             tests.append(caller)
         else:
             production.append(caller)
@@ -367,9 +382,14 @@ def _with_callers(
         outside_callers_total=len(outside),
         outside_test_callers=tests[:cap],
         outside_production_callers=production[:cap],
+        outside_production_callers_total=len(production),
         signature_effect=effect.effect if effect else None,
         signature_reason=effect.reason if effect else None,
     )
+
+
+def _language(path: str) -> str | None:
+    return EXTENSION_TO_LANGUAGE.get(PurePosixPath(path).suffix.lower())
 
 
 def unavailable_contract_impact(reason: str) -> ContractImpact:

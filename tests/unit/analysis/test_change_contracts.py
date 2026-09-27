@@ -215,11 +215,27 @@ def _signature_change(before: str, after: str, calls=(("app/b.py::main", "app/a.
     return _compute(base, head, calls=list(calls)).changes[0]
 
 
-def test_a_reflowed_signature_is_reported_with_no_effect_and_never_breaks():
-    change = _signature_change("def run(x, y)", "def run(\n    x,\n    y,\n)")
-    assert change.change == "signature"
-    assert change.signature_effect == "none"
-    assert not change.is_breaking
+def test_a_reflowed_signature_is_not_a_signature_change():
+    # Same contract, different text: it falls through to the body check, so
+    # it is reported only when the change edited inside the symbol.
+    base = [_file("app/a.py", [_sym("run", path="app/a.py", sig="def run(x, y)")])]
+    head = [_file("app/a.py", [_sym("run", path="app/a.py", sig="def run(\n  x,\n  y,\n)")])]
+    calls = [("app/b.py::main", "app/a.py::run")]
+    assert _compute(base, head, calls=calls).changes == []
+    touched = _compute(base, head, calls=calls, ranges={"app/a.py": [(12, 14)]})
+    assert [c.change for c in touched.changes] == ["body"]
+    assert touched.changes[0].signature_effect is None
+
+
+def test_the_file_language_decides_whether_a_retype_breaks():
+    base = [_file("web/a.ts", [_sym("run", path="web/a.ts", sig="function run(x: string)")])]
+    head = [_file("web/a.ts", [_sym("run", path="web/a.ts", sig="function run(x: number)")])]
+    calls = [("web/b.ts::main", "web/a.ts::run")]
+    change = _compute(base, head, calls=calls, changed=("web/a.ts",)).changes[0]
+    assert change.signature_effect == "breaking"
+    assert change.is_breaking
+    # The same edit in Python is an annotation no caller is checked against.
+    assert not _signature_change("def run(x: str)", "def run(x: int)").is_breaking
 
 
 def test_an_appended_optional_argument_is_compatible_and_never_breaks():
@@ -264,6 +280,33 @@ def test_a_removal_witnessed_only_by_tests_is_not_breaking():
     impact = _compute(base, [_file("app/a.py", [])], calls=calls)
     assert impact.changes[0].change == "removed"
     assert impact.breaking == []
+
+
+def test_a_production_module_named_like_a_test_is_still_production():
+    # ``src/pkg/test_impact.py`` is named for what it does, not a test of it.
+    caller = "packages/core/src/repowise/core/analysis/test_impact.py::build"
+    change = _signature_change("def run(x, y)", "def run(x)", calls=[(caller, "app/a.py::run")])
+    assert change.outside_production_callers == [caller]
+    assert change.is_breaking
+
+
+def test_ranking_reads_production_reach_not_test_reach():
+    def syms(sig_suffix: str):
+        return [
+            _file(
+                "app/a.py",
+                [
+                    _sym("tested", path="app/a.py", sig=f"def tested({sig_suffix})"),
+                    _sym("used", path="app/a.py", sig=f"def used({sig_suffix})"),
+                ],
+            )
+        ]
+
+    calls = [(f"tests/test_{i}.py::t", "app/a.py::tested") for i in range(5)]
+    calls += [("app/b.py::main", "app/a.py::tested")]
+    calls += [(f"app/c{i}.py::main", "app/a.py::used") for i in range(2)]
+    impact = _compute(syms("x"), syms(""), calls=calls)
+    assert [c.name for c in impact.changes] == ["used", "tested"]
 
 
 def test_production_callers_come_first_so_a_cap_keeps_them():
