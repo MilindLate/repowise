@@ -860,6 +860,7 @@ export interface DeadCodeFindingResponse {
   note: string | null;
   last_commit_at: string | null;
   commit_count_90d: number;
+  verification?: string | null;
 }
 
 export interface DeadCodeGraphNodeResponse {
@@ -1747,6 +1748,7 @@ export interface HealthFindingResponse {
   details?: Record<string, unknown>;
   status: string;
   dimension?: string;
+  verification?: string | null;
 }
 
 /**
@@ -1768,6 +1770,7 @@ export interface HealthFindingWithSymbolResponse {
   details?: Record<string, unknown>;
   status: string;
   dimension?: string;
+  verification?: string | null;
   symbol_id?: string | null;
 }
 
