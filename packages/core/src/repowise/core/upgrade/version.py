@@ -60,7 +60,11 @@ STORE_FORMAT_VERSION: int = 2
 #: v5: TS/JS JSDoc is read through export / declaration wrappers and past
 #: decorators, must touch the declaration, and a one-line ``/** doc */`` no
 #: longer keeps its closing ``*/``.
-PARSER_SCHEMA_VERSION: int = 5
+#:
+#: v6: a TypeScript/Python call on a dotted receiver (``this.a.b.m()``) becomes
+#: a call site with the path as its receiver, typed field by field; before it
+#: minted no site at all.
+PARSER_SCHEMA_VERSION: int = 6
 
 #: state.json key holding the store format version that wrote the store.
 STORE_FORMAT_VERSION_KEY = "store_format_version"

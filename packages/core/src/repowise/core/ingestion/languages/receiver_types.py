@@ -82,6 +82,46 @@ _PY_CONSTRUCTED = re.compile(
     r"(?m)^[ \t]*(?P<name>[a-z_]\w*)\s*=\s*(?P<type>[A-Z]\w*)\s*\("
 )
 
+# ``self.x: T`` and ``self.x = T(...)`` in a method: the fields a Python class
+# gives its instances. The ``member`` group marks a declaration of the
+# enclosing class wherever it sits, never of the body that makes it. A chain
+# is refused as ``_KT_CONSTRUCTED`` refuses one.
+_PY_SELF_ANNOTATED = re.compile(
+    rf"(?m)^[ \t]*(?P<member>self)\.(?P<name>[a-z_]\w*)\s*:\s*(?P<type>{_PY_TYPE})\s*(?=[=\n])"
+)
+_PY_SELF_CONSTRUCTED = re.compile(
+    r"(?m)^[ \t]*(?P<member>self)\.(?P<name>[a-z_]\w*)\s*=\s*(?P<type>[A-Z]\w*)\s*"
+    r"\((?![^()]*\)\s*\.)"
+)
+
+# TypeScript annotates after the name: parameters, fields, ``const x: T``. An
+# optional or definite marker (``x?: T``, ``x!: T``) still leaves a ``T``. The
+# type is bare or generic and must be followed by a closer at once, which
+# refuses a union (``T | null``), an array (``T[]``), a qualified name and a
+# function type. A ternary's ``a ? b : C`` is refused by the lookbehinds.
+_TS_NAME = r"[a-z_$][\w$]*"
+_TS_TYPE = r"[A-Z][\w$]*(?:<(?:[^<>]|<[^<>]*>)*>)?"
+_TS_ANNOTATED = re.compile(
+    rf"(?<![\w$.?])(?<!\?\s)(?P<name>{_TS_NAME})\s*[?!]?\s*:\s*(?P<type>{_TS_TYPE})"
+    rf"\s*(?=(?P<closer>[=;,)\n]))"
+)
+
+# An accessibility modifier makes a constructor parameter a field of its class
+# as well (``constructor(private readonly svc: Svc)``). ``_TS_ANNOTATED`` still
+# reads the same text as the parameter.
+_TS_PARAMETER_PROPERTY = re.compile(
+    rf"(?<![\w$.])(?P<member>private|protected|public|readonly)\s+(?:readonly\s+)?"
+    rf"(?P<name>{_TS_NAME})\s*[?!]?\s*:\s*(?P<type>{_TS_TYPE})\s*(?=[=,)])"
+)
+
+# ``x = new T(...)``, declared or assigned, a field initialiser included. The
+# ``=`` is the closer, so at class scope it is a field. Refuses a chain as
+# ``_KT_CONSTRUCTED`` does: ``new Builder().build()`` is not a ``Builder``.
+_TS_CONSTRUCTED = re.compile(
+    rf"(?<![\w$.])(?P<name>{_TS_NAME})\s*(?P<closer>=)\s*new\s+(?P<type>[A-Z][\w$]*)\s*"
+    r"(?:<(?:[^<>]|<[^<>]*>)*>)?\s*\((?![^()]*\)\s*\.)"
+)
+
 # Go writes the name before the type. A type may be lowercase (unexported);
 # that is safe only because ``builtin_types`` carries every predeclared
 # identifier, so ``string`` and ``error`` are refused downstream. A method's
@@ -195,6 +235,8 @@ _C_FAMILY = (_TYPED_DECLARATION, _INFERRED_FROM_NEW)
 _GO_FAMILY = (_GO_PARAM, _GO_SHORT_DECL, _GO_VAR_DECL)
 _KT_FAMILY = (_KT_ANNOTATED, _KT_CONSTRUCTED)
 _SWIFT_FAMILY = (_SWIFT_ANNOTATED, _SWIFT_CONSTRUCTED)
+_PY_FAMILY = (_PY_ANNOTATED, _PY_CONSTRUCTED, _PY_SELF_ANNOTATED, _PY_SELF_CONSTRUCTED)
+_TS_FAMILY = (_TS_ANNOTATED, _TS_PARAMETER_PROPERTY, _TS_CONSTRUCTED)
 
 _LANGUAGE_PATTERNS: dict[str, tuple[re.Pattern[str], ...]] = {
     "cpp": (_CPP_DECLARATION,),
@@ -202,8 +244,9 @@ _LANGUAGE_PATTERNS: dict[str, tuple[re.Pattern[str], ...]] = {
     "go": _GO_FAMILY,
     "java": _C_FAMILY,
     "kotlin": _KT_FAMILY,
-    "python": (_PY_ANNOTATED, _PY_CONSTRUCTED),
+    "python": _PY_FAMILY,
     "swift": _SWIFT_FAMILY,
+    "typescript": _TS_FAMILY,
 }
 
 RECEIVER_TYPE_LANGUAGES = frozenset(_LANGUAGE_PATTERNS)
@@ -253,19 +296,75 @@ _PY_BINDINGS = (
     re.compile(r"\bas\s+(?P<name>[a-z_]\w*)\b"),
     re.compile(r"\b(?P<name>[a-z_]\w*)\s*:="),
     re.compile(r"\b(?:global|nonlocal)\s+(?P<name>[a-z_]\w*)"),
-    # A parameter of any `def` or `lambda` in the span, the enclosing one
-    # included: its signature line is the first line of its own span.
-    re.compile(r"\b(?:def\s+\w+\s*\(|lambda\s+)[^)\n:]*?\b(?P<name>[a-z_]\w*)\s*(?=[,=)\n:])"),
 )
+
+# Every parameter of any `def` or `lambda` in the span, the enclosing one
+# included: its signature starts its own span. Each lowercase identifier in the
+# list counts, a default's names too, since over-matching only refuses.
+# Ceiling: a `def` list ends at its first `)`, so a default that calls hides
+# the parameters after it.
+_PY_PARAMETER_LISTS = (
+    re.compile(r"\bdef\s+\w+\s*\((?P<lhs>[^)]*)\)"),
+    re.compile(r"\blambda\b(?P<lhs>[^:\n]*):"),
+)
+_PY_NAME = re.compile(r"(?<![\w.])[a-z_]\w*")
 
 # A plain `import` in a body is deliberately absent: it names the same module
 # symbol this scope resolves against (`from .tasks import ping`; `ping.delay()`).
 
 _PY_IDENTIFIER = re.compile(r"^[a-z_]\w*$")
 
+# The TypeScript shapes that bind a name, typed or not. Over-matching only
+# refuses, so every identifier in a destructuring pattern or a parameter list
+# counts, a type name or a renamed key included. Ceiling: a parameter list
+# holding parentheses (a default that calls, a function type) is not read.
+_TS_IDENTIFIER = re.compile(r"[A-Za-z_$][\w$]*")
+_TS_BINDINGS = (
+    re.compile(r"(?<![\w$.])(?:const|let|var)\s+(?P<name>[A-Za-z_$][\w$]*)"),
+    re.compile(r"(?<![\w$.])(?:function\*?|class)\s+(?P<name>[A-Za-z_$][\w$]*)"),
+    re.compile(r"(?<![\w$.])(?P<name>[A-Za-z_$][\w$]*)\s*=>"),
+    # An assignment at the start of a statement, plain or compound.
+    re.compile(
+        r"(?m)^[ \t]*(?P<name>[A-Za-z_$][\w$]*)\s*"
+        r"(?:[-+*/%|&^]|\*\*|\?\?|\|\||&&|<<|>>>?)?=(?![=>])"
+    ),
+)
+_TS_TARGET_LISTS = (
+    re.compile(r"(?<![\w$.])(?:const|let|var)\s*(?P<lhs>\{[^;=]*\}|\[[^;=]*\])\s*(?:=|of\b|in\b)"),
+    # A parameter list: a function, a method, an arrow, a catch clause.
+    re.compile(r"(?P<head>[\w$]*)\s*(?P<lhs>\([^()]*\))\s*(?::[^=;{}()]*?)?\s*(?:=>|\{)"),
+)
+# Heads whose parenthesised part is a condition, not a parameter list.
+_TS_CONDITION_HEADS = frozenset({"if", "for", "while", "switch", "with", "return", "await"})
+
+
+def _typescript_bindings(cleaned: str, starts: list[int]) -> set[tuple[int, str]]:
+    found: set[tuple[int, str]] = set()
+    for pattern in _TS_BINDINGS:
+        for match in pattern.finditer(cleaned):
+            found.add((bisect_right(starts, match.start("name")), match.group("name")))
+    for pattern in _TS_TARGET_LISTS:
+        for match in pattern.finditer(cleaned):
+            if match.groupdict().get("head") in _TS_CONDITION_HEADS:
+                continue
+            offset = match.start("lhs")
+            for name in _TS_IDENTIFIER.finditer(match.group("lhs")):
+                found.add((bisect_right(starts, offset + name.start()), name.group()))
+    return found
+
+
+# The languages ``scan_bindings`` reads: only there can a scope be shown not
+# to bind a name.
+BINDING_LANGUAGES = frozenset({"python", "typescript"})
+
 
 def scan_bindings(text: str, language: str) -> tuple[tuple[int, str], ...]:
     """Every ``(line, name)`` *text* binds, in line order."""
+    if language == "typescript":
+        cleaned = _BLOCK_COMMENT.sub(lambda m: "\n" * m.group(0).count("\n"), text)
+        cleaned = _LINE_COMMENT.sub("", cleaned)
+        starts = [0, *(newline.end() for newline in _NEWLINE.finditer(cleaned))]
+        return tuple(sorted(_typescript_bindings(cleaned, starts)))
     if language != "python":
         return ()
     cleaned = _DOCSTRING.sub(lambda m: "\n" * m.group(0).count("\n"), text)
@@ -285,6 +384,12 @@ def scan_bindings(text: str, language: str) -> tuple[tuple[int, str], ...]:
     for pattern in _PY_BINDINGS:
         for match in pattern.finditer(cleaned):
             found.add((bisect_right(starts, match.start("name")), match.group("name")))
+
+    for pattern in _PY_PARAMETER_LISTS:
+        for match in pattern.finditer(cleaned):
+            offset = match.start("lhs")
+            for name in _PY_NAME.finditer(match.group("lhs")):
+                found.add((bisect_right(starts, offset + name.start()), name.group()))
     return tuple(sorted(found))
 
 
@@ -309,11 +414,13 @@ def framework_decorated_type(decorators: Iterable[str], language: str) -> str | 
                 return type_name
     return None
 
+
 _LANGUAGE_BLOCK_COMMENTS: dict[str, re.Pattern[str]] = {
     # C++ needs the block strip for the reason Kotlin does: doxygen writes
     # `@param Type name`, which is exactly the shape the scan reads.
     "cpp": _BLOCK_COMMENT,
     "kotlin": _BLOCK_COMMENT,
+    "typescript": _BLOCK_COMMENT,
 }
 
 _LANGUAGE_COMMENTS: dict[str, re.Pattern[str]] = {
@@ -324,6 +431,7 @@ _LANGUAGE_COMMENTS: dict[str, re.Pattern[str]] = {
     "kotlin": _LINE_COMMENT,
     "swift": _LINE_COMMENT,
     "python": _HASH_COMMENT,
+    "typescript": _LINE_COMMENT,
 }
 
 
@@ -336,6 +444,10 @@ class Declaration(NamedTuple):
     ``unwrapped`` marks a type taken from inside a pointer-like wrapper, which
     answers differently by call operator; a caller that cannot see the
     operator refuses these names.
+
+    ``member`` marks a field of the enclosing class declared from inside a
+    method (``self.x = T()``, a constructor parameter property). It belongs
+    to the class wherever it sits, and never to the body.
     """
 
     line: int
@@ -343,11 +455,19 @@ class Declaration(NamedTuple):
     type_name: str
     closer: str = ""
     unwrapped: bool = False
+    member: bool = False
 
 
 # What can end a field. `var` has no place here at all: it is a local-only
 # shape in both languages, so it carries no closer and class scope drops it.
 _FIELD_CLOSERS = frozenset({";", "="})
+
+# Where a class-scope annotation may end its line: Python's ``x: T`` and a
+# semicolon-free TypeScript ``x: T`` are fields too.
+_LANGUAGE_FIELD_CLOSERS: dict[str, frozenset[str]] = {
+    "python": frozenset({"=", "\n"}),
+    "typescript": frozenset({";", "=", "\n"}),
+}
 
 
 def _nests_in_a_builtin(raw: str, language: str) -> bool:
@@ -422,6 +542,7 @@ def scan_declarations(text: str, language: str) -> tuple[Declaration, ...]:
                     type_name,
                     closer,
                     unwrapped,
+                    bool(groups.get("member")),
                 )
             )
 
@@ -455,8 +576,42 @@ def types_in_span(
     for declaration in declarations[first:]:
         if declaration.line > end_line:
             break
-        _record(types, declaration)
+        if not declaration.member:
+            _record(types, declaration)
 
+    return types
+
+
+def bound_types(
+    declarations: Iterable[Declaration],
+    bindings: Iterable[tuple[int, str]],
+    language: str,
+    *,
+    rebinding_refuses: bool = False,
+) -> dict[str, str | None]:
+    """``{name: type}`` for one scope, read against every name it binds.
+
+    In TypeScript a declaration must itself be a binding (``const``, ``let``,
+    a parameter, an assignment), which keeps an object literal's
+    ``key: Value`` from declaring ``key``. Under *rebinding_refuses* a name the
+    scope also binds untyped on another line maps to ``None``: asked of module
+    scope, where the rebinding can run anywhere before the call. A body keeps
+    its first reading, as ``types_in_span`` does.
+    """
+    bound = set(bindings)
+    types: dict[str, str | None] = {}
+    typed: set[tuple[int, str]] = set()
+    for declaration in declarations:
+        if declaration.member:
+            continue
+        spot = (declaration.line, declaration.name)
+        if language == "typescript" and spot not in bound:
+            continue
+        _record(types, declaration)
+        typed.add(spot)
+    for spot in bound - typed if rebinding_refuses else ():
+        if spot[1] in types:
+            types[spot[1]] = None
     return types
 
 
@@ -478,7 +633,7 @@ def unwrapped_names_in_span(
     )
 
 
-def _merged(spans: Iterable[tuple[int, int]]) -> tuple[tuple[int, int], ...]:
+def merge_spans(spans: Iterable[tuple[int, int]]) -> tuple[tuple[int, int], ...]:
     """The spans as non-overlapping, ascending intervals."""
     merged: list[list[int]] = []
     for start, end in sorted(spans):
@@ -489,33 +644,43 @@ def _merged(spans: Iterable[tuple[int, int]]) -> tuple[tuple[int, int], ...]:
     return tuple((start, end) for start, end in merged)
 
 
+def in_spans(merged: tuple[tuple[int, int], ...], line: int) -> bool:
+    """Is *line* inside one of ``merge_spans``' intervals?"""
+    index = bisect_right(merged, (line, float("inf"))) - 1
+    return index >= 0 and line <= merged[index][1]
+
+
 def types_by_class(
     declarations: tuple[Declaration, ...],
     class_spans: Mapping[str, tuple[int, int]],
     function_spans: Iterable[tuple[int, int]],
+    language: str = "",
 ) -> dict[str, dict[str, str | None]]:
     """``{class_id: {name: type}}`` for the fields each class declares.
 
     A class span contains every method body inside it, so a declaration is a
     field only if it lies inside the class and inside none of the file's
-    functions. Nested classes go to the innermost class containing them, so an
-    inner class's fields never answer for the outer one.
+    functions, unless it is a ``member``. Nested classes go to the innermost
+    class containing them, so an inner class's fields never answer for the
+    outer one.
     """
+    closers = _LANGUAGE_FIELD_CLOSERS.get(language, _FIELD_CLOSERS)
     if not class_spans:
         return {}
 
-    bodies = _merged(function_spans)
+    bodies = merge_spans(function_spans)
     body_starts = [start for start, _ in bodies]
     # Innermost first, so the first containing span is the owner.
     ordered = sorted(class_spans.items(), key=lambda item: item[1][1] - item[1][0])
 
     by_class: dict[str, dict[str, str | None]] = {}
     for declaration in declarations:
-        if declaration.closer not in _FIELD_CLOSERS:
-            continue
-        index = bisect_right(body_starts, declaration.line) - 1
-        if index >= 0 and declaration.line <= bodies[index][1]:
-            continue
+        if not declaration.member:
+            if declaration.closer not in closers:
+                continue
+            index = bisect_right(body_starts, declaration.line) - 1
+            if index >= 0 and declaration.line <= bodies[index][1]:
+                continue
         for class_id, (start, end) in ordered:
             if start <= declaration.line <= end:
                 _record(by_class.setdefault(class_id, {}), declaration)
