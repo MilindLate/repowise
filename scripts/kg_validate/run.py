@@ -14,6 +14,8 @@ Usage (from the repo root):
     python scripts/kg_validate/run.py --precision --split dev \
         --compare scripts/kg_validate/precision_baselines/
     python scripts/kg_validate/run.py --precision --repos click,cobra --families imports
+    python scripts/kg_validate/run.py --precision --ci fast --compare \
+        scripts/kg_validate/precision_baselines/     # the per-PR CI set
     python scripts/kg_validate/run.py --precision --update-precision-baselines
 
 Environment:
@@ -243,7 +245,7 @@ def precision_main(args, matrix: dict) -> int:
         raise SystemExit(f"unknown families {unknown}; choose from {precision.FAMILIES}")
     repos = args.precision_repos.split(",") if args.precision_repos else None
     try:
-        names = precision.select_repos(matrix, args.split, repos)
+        names = precision.select_repos(matrix, args.split, repos, args.ci)
     except ValueError as exc:
         raise SystemExit(str(exc)) from exc
     heldout_total = sum(matrix[n]["split"] == "heldout" for n in names)
@@ -322,6 +324,9 @@ def main() -> int:
     )
     ap.add_argument("--split", choices=precision.SPLITS, default="dev")
     ap.add_argument("--repos", dest="precision_repos", help="comma-separated subset of the split")
+    ap.add_argument(
+        "--ci", choices=("fast", "nightly"), help="only repos with this matrix.toml ci tier"
+    )
     ap.add_argument("--families", default=",".join(precision.FAMILIES))
     ap.add_argument("--compare", metavar="DIR", help="precision baselines to diff against")
     ap.add_argument(

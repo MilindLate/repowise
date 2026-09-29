@@ -45,6 +45,8 @@ def test_select_repos_by_split():
     assert precision.select_repos(MATRIX, "heldout") == ["b"]
     assert precision.select_repos(MATRIX, "all") == ["a", "b", "c"]
     assert precision.select_repos(MATRIX, "dev", ["c"]) == ["c"]
+    assert precision.select_repos(MATRIX, "dev", ci="fast") == ["a"]
+    assert precision.select_repos(MATRIX, "all", ci="nightly") == ["b", "c"]
 
 
 def test_select_repos_rejects_repo_outside_split():
