@@ -21,6 +21,11 @@ Usage (from the repo root):
     # the call-edge oracle is opt-in (needs jedi; see requirements-oracles.txt)
     python scripts/kg_validate/run.py --precision --repos httpx --families calls
 
+    # labelled families (opt-in): scored on labels/<repo>/*.jsonl plus the
+    # dead-code mention oracle; unlabelled gated cells print as LABEL DEBT
+    python scripts/kg_validate/run.py --precision --repos click,flask \
+        --families dead_code,health,perf [--include-suggested]
+
 Environment:
     KG_VALIDATE_DIR   clone/work dir (default /tmp/kg-validate)
     REPOWISE_PY       python used to run the indexer (default: this python)
@@ -195,7 +200,36 @@ def predicted_identities(db_path: Path) -> list[list[str]]:
     return [sorted(c) for c in clusters.values()]
 
 
-def measure_repo(name: str, spec: dict, families: list[str], *, skip_index: bool) -> dict:
+def measure_labelled(
+    family: str, name: str, dest: Path, *, include_suggested: bool = False
+) -> dict:
+    """Per-tier counts for one labelled family: findings read from the index,
+    judged by ``labels/<name>/<family>.jsonl`` and (dead code) the mention
+    oracle's auto-TPs. ``include_suggested`` also counts claude-suggested
+    labels, which are unconfirmed."""
+    import labels
+    from oracles import dead_code_mentions
+
+    findings = labels.index_findings(dest / ".repowise" / "wiki.db", family)
+    rows = labels.load_labels(name, family)
+    verdicts = labels.resolve(rows, include_suggested)
+    oracle_tp: set[str] = set()
+    if family == "dead_code":
+        index = dead_code_mentions.MentionIndex(dest)
+        oracle_tp = {f["key"] for f in findings if not index.mentions(f)}
+    out = {"tiers": labels.count_cells(findings, verdicts, family, oracle_tp)}
+    if family == "perf":
+        claims = [{**f, "tier": precision.ALL_TIERS} for f in findings if "N+1" in f["reason"]]
+        cell = labels.count_cells(claims, verdicts, "perf_n_plus_one").get(precision.ALL_TIERS)
+        out["n_plus_one"] = cell or {"findings": 0, "tp": 0, "fp": 0, "by_source": {}}
+    live = {f["key"] for f in findings}
+    out["stale_labels"] = len({r["finding_key"] for r in rows if r.get("label")} - live)
+    return out
+
+
+def measure_repo(
+    name: str, spec: dict, families: list[str], *, skip_index: bool, include_suggested=False
+) -> dict:
     """Index one repo and grade it against the oracles for ``families``."""
     from oracles import calls as calls_oracle
     from oracles import entry_points as ep_oracle
@@ -238,6 +272,11 @@ def measure_repo(name: str, spec: dict, families: list[str], *, skip_index: bool
         kg = json.loads(kg_path.read_text(encoding="utf-8"))
         predicted = [p["path"] for p in (kg.get("project") or {}).get("packages") or []]
         fams["packages"] = pkg_oracle.score(predicted, pkg_oracle.declared_members(dest))
+    for fam in precision.LABELLED_FAMILIES:
+        if fam in families:
+            fams[fam] = measure_labelled(fam, name, dest, include_suggested=include_suggested)
+    if include_suggested:
+        result["suggested_included"] = True
     return result
 
 
@@ -255,6 +294,8 @@ def _load_baselines(base_dir: Path, names: list[str], families: list[str]) -> di
 def precision_main(args, matrix: dict) -> int:
     thresholds = score.load_thresholds()
     families = args.families.split(",")
+    if args.include_suggested and args.update_precision_baselines:
+        raise SystemExit("baselines never include claude-suggested labels")
     unknown = [f for f in families if f not in precision.FAMILIES]
     if unknown:
         raise SystemExit(f"unknown families {unknown}; choose from {precision.FAMILIES}")
@@ -270,7 +311,15 @@ def precision_main(args, matrix: dict) -> int:
         # Held-out repos are only ever reported in aggregate.
         print(f"== {f'held-out repo {i}/{len(names)}' if heldout else name} ==", flush=True)
         try:
-            results.append(measure_repo(name, matrix[name], families, skip_index=args.skip_index))
+            results.append(
+                measure_repo(
+                    name,
+                    matrix[name],
+                    families,
+                    skip_index=args.skip_index,
+                    include_suggested=args.include_suggested,
+                )
+            )
         except Exception as exc:
             errors.append(name)
             print(f"  !! harness error: {type(exc).__name__}" + ("" if heldout else f": {exc}"))
@@ -292,15 +341,20 @@ def precision_main(args, matrix: dict) -> int:
     rows = precision.compare(shown, baselines)
     regressed = [r for r in rows if r.regressed]
 
+    debt = precision.label_debt(shown, thresholds)
     print()
+    if args.include_suggested:
+        print("UNCONFIRMED: labelled families include claude-suggested labels.\n")
     print(precision.render_compare(rows))
     print(precision.render_checks(checks, new))
+    print(precision.render_debt(debt), end="")
     if args.as_json:
         report = {
             "results": shown,
             "rows": [{**vars(r), "delta": r.delta, "regressed": r.regressed} for r in rows],
             "checks": [vars(c) for c in checks],
             "new_failures": [vars(c) for c in new],
+            "label_debt": debt,
             "errors": len(errors) if held else errors,
         }
         print(json.dumps(report, indent=1, sort_keys=True))
@@ -345,7 +399,12 @@ def main() -> int:
     ap.add_argument(
         "--families",
         default=",".join(precision.DEFAULT_FAMILIES),
-        help=f"comma-separated subset of {','.join(precision.FAMILIES)}",
+        help=f"comma-separated, from {','.join(precision.FAMILIES)}",
+    )
+    ap.add_argument(
+        "--include-suggested",
+        action="store_true",
+        help="also count claude-suggested labels (unconfirmed; reported as such)",
     )
     ap.add_argument("--compare", metavar="DIR", help="precision baselines to diff against")
     ap.add_argument(
