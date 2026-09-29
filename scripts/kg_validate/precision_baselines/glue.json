@@ -1,0 +1,22 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 0,
+   "p_at_5": null,
+   "predicted_top5": [],
+   "recall": null
+  },
+  "identity": {
+   "b3_precision": 0.9574468085106383,
+   "b3_recall": 1.0,
+   "person_count_error": 0.0425531914893617,
+   "predicted_people": 45,
+   "true_people": 47
+  },
+  "imports": {}
+ },
+ "repo": "glue",
+ "sha": "da9c73f7a3de6a27f3103cb5bb2355820a4c3a6a",
+ "split": "dev"
+}

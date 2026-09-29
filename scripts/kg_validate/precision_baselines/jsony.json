@@ -1,0 +1,22 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 0,
+   "p_at_5": null,
+   "predicted_top5": [],
+   "recall": null
+  },
+  "identity": {
+   "b3_precision": 0.9523809523809523,
+   "b3_recall": 1.0,
+   "person_count_error": 0.047619047619047616,
+   "predicted_people": 20,
+   "true_people": 21
+  },
+  "imports": {}
+ },
+ "repo": "jsony",
+ "sha": "c5874fb71435e3ced8ee0025822e15f5d0e8e622",
+ "split": "dev"
+}

@@ -1,0 +1,22 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 0,
+   "p_at_5": null,
+   "predicted_top5": [],
+   "recall": null
+  },
+  "identity": {
+   "b3_precision": 0.9929577464788732,
+   "b3_recall": 1.0,
+   "person_count_error": 0.007042253521126761,
+   "predicted_people": 141,
+   "true_people": 142
+  },
+  "imports": {}
+ },
+ "repo": "aeson",
+ "sha": "19f8eddb9bd6aaa464f21a54fa1f7cd7740112c3",
+ "split": "dev"
+}

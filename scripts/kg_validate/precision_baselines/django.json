@@ -1,0 +1,41 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 1,
+   "p_at_5": 0.0,
+   "predicted_top5": [
+    "django/__main__.py",
+    "django/core/wsgi.py",
+    "django/core/asgi.py",
+    "django/core/handlers/wsgi.py",
+    "django/core/handlers/asgi.py"
+   ],
+   "recall": 1.0
+  },
+  "identity": {
+   "b3_precision": 1.0,
+   "b3_recall": 1.0,
+   "person_count_error": 0.0,
+   "predicted_people": 132,
+   "true_people": 132
+  },
+  "imports": {
+   "python": {
+    "dst_not_indexed": 64,
+    "fn": 65,
+    "fp": 897,
+    "tp": 8304
+   },
+   "typescript": {
+    "dst_not_indexed": 0,
+    "fn": 0,
+    "fp": 0,
+    "tp": 2
+   }
+  }
+ },
+ "repo": "django",
+ "sha": "a53e02af6d7a07d0367b534f7107a0e2a37e3d34",
+ "split": "dev"
+}

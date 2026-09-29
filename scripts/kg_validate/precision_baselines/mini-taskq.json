@@ -1,0 +1,31 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 0,
+   "p_at_5": null,
+   "predicted_top5": [
+    "taskq/cli.py"
+   ],
+   "recall": null
+  },
+  "identity": {
+   "b3_precision": 1.0,
+   "b3_recall": 1.0,
+   "person_count_error": 0.0,
+   "predicted_people": 1,
+   "true_people": 1
+  },
+  "imports": {
+   "python": {
+    "dst_not_indexed": 0,
+    "fn": 0,
+    "fp": 0,
+    "tp": 12
+   }
+  }
+ },
+ "repo": "mini-taskq",
+ "sha": "245eb8213b4ac28571d83cb5080a3146548e4324",
+ "split": "dev"
+}

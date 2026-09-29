@@ -1,0 +1,22 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 4,
+   "p_at_5": null,
+   "predicted_top5": [],
+   "recall": 0.0
+  },
+  "identity": {
+   "b3_precision": 0.9705882352941176,
+   "b3_recall": 1.0,
+   "person_count_error": 0.0196078431372549,
+   "predicted_people": 50,
+   "true_people": 51
+  },
+  "imports": {}
+ },
+ "repo": "gson",
+ "sha": "004e7a4949e08b430e3c8996998ee5a17ff9423a",
+ "split": "dev"
+}

@@ -1,0 +1,39 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 3,
+   "p_at_5": 1.0,
+   "predicted_top5": [
+    "cmd/release/main.go",
+    "cmd/sleepit/sleepit.go",
+    "cmd/task/task.go"
+   ],
+   "recall": 1.0
+  },
+  "identity": {
+   "b3_precision": 0.9782608695652174,
+   "b3_recall": 1.0,
+   "person_count_error": 0.021739130434782608,
+   "predicted_people": 45,
+   "true_people": 46
+  },
+  "imports": {
+   "go": {
+    "dst_not_indexed": 5,
+    "fn": 111,
+    "fp": 0,
+    "tp": 1203
+   },
+   "typescript": {
+    "dst_not_indexed": 1,
+    "fn": 0,
+    "fp": 0,
+    "tp": 9
+   }
+  }
+ },
+ "repo": "task",
+ "sha": "f50327f2a2883f9e5b4d7c7c2ae489d6334e2bd9",
+ "split": "dev"
+}

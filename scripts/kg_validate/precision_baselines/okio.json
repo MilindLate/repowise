@@ -1,0 +1,22 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 31,
+   "p_at_5": null,
+   "predicted_top5": [],
+   "recall": 0.0
+  },
+  "identity": {
+   "b3_precision": 1.0,
+   "b3_recall": 1.0,
+   "person_count_error": 0.0,
+   "predicted_people": 48,
+   "true_people": 48
+  },
+  "imports": {}
+ },
+ "repo": "okio",
+ "sha": "722c8be0043d99b7b08d169b0ae90a24c15267ff",
+ "split": "dev"
+}

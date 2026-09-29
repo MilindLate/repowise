@@ -1,0 +1,24 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 0,
+   "p_at_5": null,
+   "predicted_top5": [
+    "lib/sinatra/main.rb"
+   ],
+   "recall": null
+  },
+  "identity": {
+   "b3_precision": 0.9975247524752475,
+   "b3_recall": 1.0,
+   "person_count_error": 0.0024752475247524753,
+   "predicted_people": 403,
+   "true_people": 404
+  },
+  "imports": {}
+ },
+ "repo": "sinatra",
+ "sha": "5236d3459b8b9015e5ce21ddd0c6beb0db4081d4",
+ "split": "dev"
+}

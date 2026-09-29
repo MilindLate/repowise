@@ -1,0 +1,29 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 6,
+   "p_at_5": null,
+   "predicted_top5": [],
+   "recall": 0.0
+  },
+  "identity": {
+   "b3_precision": 0.9931972789115646,
+   "b3_recall": 1.0,
+   "person_count_error": 0.006802721088435374,
+   "predicted_people": 146,
+   "true_people": 147
+  },
+  "imports": {
+   "typescript": {
+    "dst_not_indexed": 1,
+    "fn": 0,
+    "fp": 0,
+    "tp": 120
+   }
+  }
+ },
+ "repo": "commerce",
+ "sha": "3761e52e60df9c6a316e067dbfd7032e494d3634",
+ "split": "dev"
+}

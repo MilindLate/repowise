@@ -1,0 +1,24 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 0,
+   "p_at_5": null,
+   "predicted_top5": [
+    "src/dfmt/main.d"
+   ],
+   "recall": null
+  },
+  "identity": {
+   "b3_precision": 0.9615384615384616,
+   "b3_recall": 1.0,
+   "person_count_error": 0.038461538461538464,
+   "predicted_people": 50,
+   "true_people": 52
+  },
+  "imports": {}
+ },
+ "repo": "dfmt",
+ "sha": "c65d1c8a9cd2d784ded4cc7517c2cdd42c0c5c76",
+ "split": "dev"
+}

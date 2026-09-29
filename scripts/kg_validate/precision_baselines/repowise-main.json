@@ -1,0 +1,39 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 37,
+   "p_at_5": 0.6666666666666666,
+   "predicted_top5": [
+    "packages/cli/src/repowise/cli/main.py",
+    "packages/server/src/repowise/server/app.py",
+    "packages/cli/src/repowise/cli/augment_hook.py"
+   ],
+   "recall": 0.05405405405405406
+  },
+  "identity": {
+   "b3_precision": 1.0,
+   "b3_recall": 0.9615384615384616,
+   "person_count_error": 0.041666666666666664,
+   "predicted_people": 25,
+   "true_people": 24
+  },
+  "imports": {
+   "python": {
+    "dst_not_indexed": 7,
+    "fn": 2,
+    "fp": 639,
+    "tp": 2642
+   },
+   "typescript": {
+    "dst_not_indexed": 0,
+    "fn": 0,
+    "fp": 0,
+    "tp": 1589
+   }
+  }
+ },
+ "repo": "repowise-main",
+ "sha": "413e82905e2d48b8699c7a61c2b98920c2fc555a",
+ "split": "dev"
+}

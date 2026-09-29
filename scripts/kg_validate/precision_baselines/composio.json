@@ -1,0 +1,38 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 46,
+   "p_at_5": 0.0,
+   "predicted_top5": [
+    "ts/packages/cli-keyring/src/core/entry.ts",
+    "harness/run.mjs"
+   ],
+   "recall": 0.0
+  },
+  "identity": {
+   "b3_precision": 0.9857142857142858,
+   "b3_recall": 0.9928571428571429,
+   "person_count_error": 0.0072992700729927005,
+   "predicted_people": 136,
+   "true_people": 137
+  },
+  "imports": {
+   "python": {
+    "dst_not_indexed": 61,
+    "fn": 0,
+    "fp": 174,
+    "tp": 521
+   },
+   "typescript": {
+    "dst_not_indexed": 45,
+    "fn": 2,
+    "fp": 3,
+    "tp": 3674
+   }
+  }
+ },
+ "repo": "composio",
+ "sha": "c7e7da1e0542a1fbe82629bcf96c9da1d3f9da25",
+ "split": "dev"
+}

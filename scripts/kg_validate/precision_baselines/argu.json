@@ -1,0 +1,24 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 0,
+   "p_at_5": null,
+   "predicted_top5": [
+    "src/Argu/Parsers/Cli.fs"
+   ],
+   "recall": null
+  },
+  "identity": {
+   "b3_precision": 0.9655172413793104,
+   "b3_recall": 1.0,
+   "person_count_error": 0.034482758620689655,
+   "predicted_people": 56,
+   "true_people": 58
+  },
+  "imports": {}
+ },
+ "repo": "argu",
+ "sha": "198f4d50fd5208a84c4e02c87eba8cc92a13a5f0",
+ "split": "dev"
+}
