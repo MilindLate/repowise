@@ -8,8 +8,8 @@ Only PostgreSQL is altered: local SQLite stores never run Alembic
 (``init_db``'s reconciler is additive-only), and new SQLite stores get the
 nullable column from the model.
 
-Revision ID: 0084
-Revises: 0083
+Revision ID: 0086
+Revises: 0085
 Create Date: 2026-09-29
 """
 
@@ -21,8 +21,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers
-revision: str = "0084"
-down_revision: str | None = "0083"
+revision: str = "0086"
+down_revision: str | None = "0085"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
