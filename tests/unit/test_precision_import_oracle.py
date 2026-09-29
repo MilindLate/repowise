@@ -103,6 +103,15 @@ def test_python_stdlib_and_third_party_names_do_not_shadow(tmp_path):
     assert ("scripts/run.py", "scripts/json.py") in edges
 
 
+def test_python_unparseable_file_is_out_of_scope(tmp_path):
+    root = _write(tmp_path, {"a.py": "import b\n", "b.py": "def f(:\n"})
+    out = oracle.oracle_edges(root, ("python",))
+    assert out["sources"] == {"a.py"}
+    # A graph edge from the unparseable file is neither a TP nor an FP.
+    result = oracle.compare(out, {("a.py", "b.py"), ("b.py", "a.py")}, {"a.py", "b.py"})
+    assert (result["python"]["tp"], result["python"]["fp"]) == (1, 0)
+
+
 def test_python_regular_package_owns_its_name(tmp_path):
     # `pkg` is a regular package at the first root; find_spec never falls
     # through to another root's pkg/extra.py.
@@ -233,9 +242,13 @@ def test_go_package_imports_fan_out_to_package_files(tmp_path):
             "b/b_other.go": "//go:build neverset\n\npackage b\n\nconst C = 2\n",
             "b/b_test.go": 'package b_test\n\nimport "example.com/m/b"\n\nvar _ = b.B\n',
             "b/gen.go": "//go:build ignore\n\npackage main\n\nfunc main() {}\n",
+            # `./...` skips `_` dirs: no package data, so out of scope.
+            "_examples/ex.go": 'package main\n\nimport "example.com/m/b"\n\nvar _ = b.B\n',
         },
     )
-    edges = _edges(tmp_path, "go")
+    out = oracle.oracle_edges(tmp_path, ("go",))
+    assert "_examples/ex.go" not in out["sources"] and "main.go" in out["sources"]
+    edges = out["edges"]
     assert edges == {
         ("main.go", "b/b.go"),
         ("main.go", "b/b_other.go"),  # build-tag-excluded files are still b's

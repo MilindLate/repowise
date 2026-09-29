@@ -1,0 +1,28 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 1,
+   "p_at_5": 0.0,
+   "predicted_top5": [
+    "crates/typst-kit/src/server.rs",
+    "crates/typst-cli/src/main.rs",
+    "crates/typst-pdf/src/lib.rs",
+    "crates/typst-layout/src/lib.rs",
+    "crates/typst-library/src/lib.rs"
+   ],
+   "recall": 0.0
+  },
+  "identity": {
+   "b3_precision": 1.0,
+   "b3_recall": 1.0,
+   "person_count_error": 0.0,
+   "predicted_people": 86,
+   "true_people": 86
+  },
+  "imports": {}
+ },
+ "repo": "typst",
+ "sha": "07f5f1afca0a037e03911c8b56e8a14742ac2e8d",
+ "split": "dev"
+}

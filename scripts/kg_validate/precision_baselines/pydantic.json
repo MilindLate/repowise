@@ -1,0 +1,33 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 0,
+   "p_at_5": null,
+   "predicted_top5": [
+    "pydantic/main.py",
+    "pydantic/v1/main.py",
+    "pydantic-core/src/lib.rs"
+   ],
+   "recall": null
+  },
+  "identity": {
+   "b3_precision": 1.0,
+   "b3_recall": 1.0,
+   "person_count_error": 0.0,
+   "predicted_people": 136,
+   "true_people": 136
+  },
+  "imports": {
+   "python": {
+    "dst_not_indexed": 0,
+    "fn": 8,
+    "fp": 354,
+    "tp": 1223
+   }
+  }
+ },
+ "repo": "pydantic",
+ "sha": "86f6bbfc3597088df757e8a2c40eb04a38699492",
+ "split": "dev"
+}

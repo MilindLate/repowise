@@ -1,0 +1,34 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 1,
+   "p_at_5": 0.25,
+   "predicted_top5": [
+    "src/flask/app.py",
+    "src/flask/cli.py",
+    "src/flask/__main__.py",
+    "src/flask/sansio/app.py"
+   ],
+   "recall": 1.0
+  },
+  "identity": {
+   "b3_precision": 1.0,
+   "b3_recall": 1.0,
+   "person_count_error": 0.0,
+   "predicted_people": 447,
+   "true_people": 447
+  },
+  "imports": {
+   "python": {
+    "dst_not_indexed": 0,
+    "fn": 2,
+    "fp": 71,
+    "tp": 186
+   }
+  }
+ },
+ "repo": "flask",
+ "sha": "954f5684e4841aad84a8eec7ace7b81a0d3f6831",
+ "split": "dev"
+}

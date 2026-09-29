@@ -1,0 +1,32 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 28,
+   "p_at_5": 0.5,
+   "predicted_top5": [
+    "packages/openapi/src/cli.ts",
+    "packages/next/src/app-dir/server.ts"
+   ],
+   "recall": 0.03571428571428571
+  },
+  "identity": {
+   "b3_precision": 0.9907407407407407,
+   "b3_recall": 1.0,
+   "person_count_error": 0.009345794392523364,
+   "predicted_people": 106,
+   "true_people": 107
+  },
+  "imports": {
+   "typescript": {
+    "dst_not_indexed": 37,
+    "fn": 79,
+    "fp": 7,
+    "tp": 1806
+   }
+  }
+ },
+ "repo": "trpc",
+ "sha": "fa78a1be7c276e48d806f33ad8352b007fe5cc1e",
+ "split": "dev"
+}

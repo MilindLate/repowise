@@ -1,0 +1,24 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 0,
+   "p_at_5": null,
+   "predicted_top5": [
+    "src/compojure/core.clj"
+   ],
+   "recall": null
+  },
+  "identity": {
+   "b3_precision": 1.0,
+   "b3_recall": 1.0,
+   "person_count_error": 0.0,
+   "predicted_people": 49,
+   "true_people": 49
+  },
+  "imports": {}
+ },
+ "repo": "compojure",
+ "sha": "8a4758d28e8fcd28fa7610dca6e2908d039e6a4f",
+ "split": "dev"
+}

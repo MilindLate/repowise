@@ -1,0 +1,22 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 0,
+   "p_at_5": null,
+   "predicted_top5": [],
+   "recall": null
+  },
+  "identity": {
+   "b3_precision": 1.0,
+   "b3_recall": 1.0,
+   "person_count_error": 0.0,
+   "predicted_people": 29,
+   "true_people": 29
+  },
+  "imports": {}
+ },
+ "repo": "cowlib",
+ "sha": "71ae94fa42cbe55fdc5bfbb3d712ba8ab1b2918f",
+ "split": "dev"
+}

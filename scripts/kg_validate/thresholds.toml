@@ -15,10 +15,16 @@
 #
 # Anti-gaming (rule R1): every family carries a recall floor or, where no
 # complete oracle exists, a finding-count floor, so precision can't be
-# bought by emitting nothing. The recall and count floors are provisional
-# until H4 records dev-split baselines; tighten them to baseline minus a
-# tolerance then. "or hidden" families have no count floor: hiding them is
-# the allowed alternative to meeting the precision floor.
+# bought by emitting nothing. "or hidden" families have no count floor:
+# hiding them is the allowed alternative to meeting the precision floor.
+#
+# Floors marked "dev baseline" are the pooled dev-split value from
+# precision_baselines/ (run.py --precision --split dev, 2026-09-29) minus a
+# 2pp tolerance, the same margin run.py --compare allows per repo. Per-repo
+# recall and counts are held by that --compare rule (no repo may lose more
+# than 2pp against its own baseline), not by a shared absolute floor. Floors
+# for families with no oracle in run.py yet (dead_code, calls, health,
+# get_answer) are still provisional: set them the same way when they land.
 
 [calibration]
 ece_max = 0.05
@@ -44,15 +50,17 @@ min_findings = 100
 [family.unused_internal]
 precision = 0.80     # or hidden
 
+# imports has a complete oracle, so recall is its anti-gaming floor (no
+# count floor). Dev baseline 2026-09-29: 45,101 graph edges in scope,
+# precision 94.9%, recall 98.7% (python 85.4% / 99.4%, typescript
+# 99.96% / 98.8%, go 99.4% / 91.3%).
 [family.imports]
 precision = 0.98
-recall = 0.90
-recall_per_repo = 0.85
-min_findings = 1000
+recall = 0.967       # dev baseline 0.987 - 0.02
 
 [family."imports.python"]   # family "imports.python" or tier "python"
 precision = 0.99
-recall = 0.90
+recall = 0.974       # dev baseline 0.994 - 0.02
 
 [family.calls]
 min_confidence = 0.9
@@ -66,7 +74,7 @@ metrics.recall = { min = 0.80 }
 
 [family.identity]
 metrics.b3_precision = { min = 0.99 }
-metrics.b3_recall = { min = 0.90 }
+metrics.b3_recall = { min = 0.94 }  # worst dev repo 0.962 - 0.02 (per-repo metric)
 metrics.person_count_error = { max = 0.05 }
 
 [family.health]

@@ -175,6 +175,9 @@ def test_entry_point_score_p_at_5_and_recall():
     m = entry_points.score(["a"], manifest)
     assert m == {"p_at_5": 1.0, "recall": 0.25}
     assert entry_points.score([], set()) == {"p_at_5": None, "recall": None}
+    # No manifest entries and no gold set: the prediction is unjudged, not wrong.
+    assert entry_points.score(["a"], set()) == {"p_at_5": None, "recall": None}
+    assert entry_points.score(["a"], set(), gold={"a"})["p_at_5"] == 1.0
 
 
 # --- identity ----------------------------------------------------------------
@@ -236,6 +239,22 @@ def test_hidden_mailmap_exposes_raw_identities_and_restores(mailmap_repo):
         assert len(raw) == 5  # every email its own person without the mailmap
     assert (mailmap_repo / ".mailmap").is_file()
     assert len(identity.truth_clusters(mailmap_repo)) == 3
+
+
+def test_noreply_variants_of_one_login_are_one_person(tmp_path):
+    repo = tmp_path / "n"
+    repo.mkdir()
+    _git(repo, "init", "-q")
+    for author in (
+        "Dee <42+dee@users.noreply.github.com>",
+        "Dee <dee@users.noreply.github.com>",
+        "Other <43+deer@users.noreply.github.com>",
+    ):
+        _git(repo, "commit", "-q", "--allow-empty", "-m", "c", f"--author={author}")
+    assert sorted(sorted(c) for c in identity.truth_clusters(repo)) == [
+        ["42+dee@users.noreply.github.com", "dee@users.noreply.github.com"],
+        ["43+deer@users.noreply.github.com"],
+    ]
 
 
 def test_alias_labels_union_into_truth(tmp_path, mailmap_repo):

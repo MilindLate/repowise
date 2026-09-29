@@ -272,11 +272,13 @@ def score(
 
     P@k divides by min(k, len(predicted)): a short list is not penalised for
     brevity (the recall floor covers that). Recall is against ``manifest``.
+    With no gold set and an empty manifest there is nothing to judge the
+    prediction against, so P@k is None rather than 0.
     """
     top = predicted[:k]
     truth = gold if gold is not None else manifest
     return {
-        f"p_at_{k}": (sum(p in truth for p in top) / len(top)) if top else None,
+        f"p_at_{k}": (sum(p in truth for p in top) / len(top)) if top and truth else None,
         "recall": (len(set(predicted) & manifest) / len(manifest)) if manifest else None,
     }
 

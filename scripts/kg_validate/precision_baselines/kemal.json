@@ -1,0 +1,24 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 0,
+   "p_at_5": null,
+   "predicted_top5": [
+    "src/kemal/cli.cr"
+   ],
+   "recall": null
+  },
+  "identity": {
+   "b3_precision": 0.9864864864864865,
+   "b3_recall": 1.0,
+   "person_count_error": 0.013513513513513514,
+   "predicted_people": 73,
+   "true_people": 74
+  },
+  "imports": {}
+ },
+ "repo": "kemal",
+ "sha": "73e4c01d0ae40a01feb3ca759eed709c356a6701",
+ "split": "dev"
+}

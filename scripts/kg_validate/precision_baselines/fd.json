@@ -1,0 +1,25 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 0,
+   "p_at_5": null,
+   "predicted_top5": [
+    "src/cli.rs",
+    "src/main.rs"
+   ],
+   "recall": null
+  },
+  "identity": {
+   "b3_precision": 0.9807692307692307,
+   "b3_recall": 1.0,
+   "person_count_error": 0.019230769230769232,
+   "predicted_people": 153,
+   "true_people": 156
+  },
+  "imports": {}
+ },
+ "repo": "fd",
+ "sha": "f7d4d717c287a7834f8721efc0fa91c51d92afee",
+ "split": "dev"
+}

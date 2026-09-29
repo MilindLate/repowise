@@ -1,0 +1,24 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 0,
+   "p_at_5": null,
+   "predicted_top5": [
+    "lib/plug/application.ex"
+   ],
+   "recall": null
+  },
+  "identity": {
+   "b3_precision": 0.9884393063583815,
+   "b3_recall": 1.0,
+   "person_count_error": 0.011560693641618497,
+   "predicted_people": 171,
+   "true_people": 173
+  },
+  "imports": {}
+ },
+ "repo": "plug",
+ "sha": "d2580b0579a7d804b2dfa0f9ed35d459236143ed",
+ "split": "dev"
+}

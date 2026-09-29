@@ -1,0 +1,22 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 0,
+   "p_at_5": null,
+   "predicted_top5": [],
+   "recall": null
+  },
+  "identity": {
+   "b3_precision": 1.0,
+   "b3_recall": 0.9770992366412213,
+   "person_count_error": 0.023622047244094488,
+   "predicted_people": 130,
+   "true_people": 127
+  },
+  "imports": {}
+ },
+ "repo": "libuv",
+ "sha": "cdc632c68feb3961f84ea109295db38dfa082347",
+ "split": "dev"
+}

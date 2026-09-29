@@ -1,0 +1,29 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 0,
+   "p_at_5": null,
+   "predicted_top5": [],
+   "recall": null
+  },
+  "identity": {
+   "b3_precision": 1.0,
+   "b3_recall": 1.0,
+   "person_count_error": 0.0,
+   "predicted_people": 318,
+   "true_people": 318
+  },
+  "imports": {
+   "python": {
+    "dst_not_indexed": 0,
+    "fn": 1,
+    "fp": 18,
+    "tp": 105
+   }
+  }
+ },
+ "repo": "requests",
+ "sha": "cd90742ed94d901759e26766197d0ce7c7bd9c8e",
+ "split": "dev"
+}

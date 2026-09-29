@@ -1,0 +1,24 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 0,
+   "p_at_5": null,
+   "predicted_top5": [
+    "Slim/App.php"
+   ],
+   "recall": null
+  },
+  "identity": {
+   "b3_precision": 0.9894736842105263,
+   "b3_recall": 1.0,
+   "person_count_error": 0.010582010582010581,
+   "predicted_people": 187,
+   "true_people": 189
+  },
+  "imports": {}
+ },
+ "repo": "slim",
+ "sha": "e12cb05ca2a14e8f459d019e87a31dc915b80470",
+ "split": "dev"
+}

@@ -1,0 +1,41 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 128,
+   "p_at_5": 0.4,
+   "predicted_top5": [
+    "packages/devtools/bin/cli.js",
+    "tools/memory-benchmark/src/cli.mjs",
+    "packages/devtools/src/viewer/server.ts",
+    "packages/devtools/src/viewer/client/main.tsx",
+    "packages/devtools/src/viewer/client/app.tsx"
+   ],
+   "recall": 0.015625
+  },
+  "identity": {
+   "b3_precision": 1.0,
+   "b3_recall": 1.0,
+   "person_count_error": 0.0,
+   "predicted_people": 37,
+   "true_people": 37
+  },
+  "imports": {
+   "python": {
+    "dst_not_indexed": 0,
+    "fn": 0,
+    "fp": 0,
+    "tp": 3
+   },
+   "typescript": {
+    "dst_not_indexed": 150,
+    "fn": 0,
+    "fp": 1,
+    "tp": 20610
+   }
+  }
+ },
+ "repo": "vercel-ai",
+ "sha": "91345da69958dc3587effe3121eb44e897d6ea09",
+ "split": "dev"
+}

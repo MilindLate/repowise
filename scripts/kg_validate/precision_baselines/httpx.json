@@ -1,0 +1,33 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 1,
+   "p_at_5": 0.3333333333333333,
+   "predicted_top5": [
+    "httpx/_transports/wsgi.py",
+    "httpx/_transports/asgi.py",
+    "httpx/__init__.py"
+   ],
+   "recall": 1.0
+  },
+  "identity": {
+   "b3_precision": 0.9923076923076923,
+   "b3_recall": 1.0,
+   "person_count_error": 0.007751937984496124,
+   "predicted_people": 128,
+   "true_people": 129
+  },
+  "imports": {
+   "python": {
+    "dst_not_indexed": 0,
+    "fn": 0,
+    "fp": 38,
+    "tp": 122
+   }
+  }
+ },
+ "repo": "httpx",
+ "sha": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+ "split": "dev"
+}

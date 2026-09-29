@@ -1,0 +1,29 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 0,
+   "p_at_5": null,
+   "predicted_top5": [],
+   "recall": null
+  },
+  "identity": {
+   "b3_precision": 0.9955357142857143,
+   "b3_recall": 1.0,
+   "person_count_error": 0.004464285714285714,
+   "predicted_people": 223,
+   "true_people": 224
+  },
+  "imports": {
+   "go": {
+    "dst_not_indexed": 0,
+    "fn": 5,
+    "fp": 0,
+    "tp": 154
+   }
+  }
+ },
+ "repo": "cobra",
+ "sha": "adbc8813901bba65827259daa8e22ff94ec1f30e",
+ "split": "dev"
+}

@@ -1,0 +1,24 @@
+{
+ "families": {
+  "entry_points": {
+   "gold": false,
+   "manifest_count": 0,
+   "p_at_5": null,
+   "predicted_top5": [
+    "lib/init.lua"
+   ],
+   "recall": null
+  },
+  "identity": {
+   "b3_precision": 1.0,
+   "b3_recall": 1.0,
+   "person_count_error": 0.0,
+   "predicted_people": 13,
+   "true_people": 13
+  },
+  "imports": {}
+ },
+ "repo": "roblox-lua-promise",
+ "sha": "031d429c82ee458a849e79fa523523bd349d7695",
+ "split": "dev"
+}
