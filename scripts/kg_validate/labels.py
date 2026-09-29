@@ -312,14 +312,18 @@ def queue_rows(
     per_cell: int = SAMPLE_PER_CELL,
     spot_check: int = ORACLE_SPOT_CHECK,
     seed: int = 0,
+    tiers: set[str] | None = None,
 ) -> list[dict]:
     """Unlabelled queue rows sampled from ``checkout``'s index.
 
     Cells are (kind, tier) for dead code and biomarker type for health/perf.
     Dead-code findings the mention oracle auto-labels are left out, except a
     spot-check sample (``oracle: "no_mentions"``) that measures the oracle.
+    ``tiers`` restricts the queue to those tiers (e.g. unlabelled types).
     """
     findings = index_findings(checkout / ".repowise" / "wiki.db", family)
+    if tiers:
+        findings = [f for f in findings if f["tier"] in tiers]
     sha = _git_head(checkout)
     mentions: dict[str, list] = {}
     if family == "dead_code":
@@ -417,6 +421,7 @@ def main(argv: list[str] | None = None) -> int:
     q.add_argument("--per-cell", type=int, default=SAMPLE_PER_CELL)
     q.add_argument("--spot-check", type=int, default=ORACLE_SPOT_CHECK)
     q.add_argument("--seed", type=int, default=0)
+    q.add_argument("--tiers", help="comma-separated tiers / biomarker types to queue")
     s = sub.add_parser("summary", help="label counts by repo, family, labeler and label")
     s.add_argument("--repo", action="append")
     k = sub.add_parser("kappa", help="Cohen's kappa over double-labelled findings")
@@ -434,6 +439,7 @@ def main(argv: list[str] | None = None) -> int:
             per_cell=args.per_cell,
             spot_check=args.spot_check,
             seed=args.seed,
+            tiers=set(args.tiers.split(",")) if args.tiers else None,
         )
         _append(path, rows)
         print(f"{len(rows)} queue rows appended to {path}")

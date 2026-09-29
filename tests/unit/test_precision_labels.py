@@ -427,3 +427,31 @@ def test_index_findings_tiers_and_keys(tmp_path):
     assert [f["tier"] for f in health] == ["complex_method"]
     assert [f["tier"] for f in perf] == ["io_in_loop"]
     assert perf[0]["key"] == labels.finding_key("src/a.py", "io_in_loop", "f", 5, 5)
+
+
+def test_queue_samples_per_cell_once_per_key_and_filters_tiers(tmp_path):
+    root = _git_repo(tmp_path / "repo", {"a.py": "x = 1\n"})
+    subprocess.run(
+        ["git", "-C", str(root), "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "c"],
+        check=True,
+    )
+    (root / ".repowise").mkdir()
+    with sqlite3.connect(root / ".repowise" / "wiki.db") as db:
+        db.execute(
+            "CREATE TABLE health_findings (biomarker_type, file_path, function_name, "
+            "line_start, line_end, severity, dimension, reason, details_json)"
+        )
+        rows = [
+            ("complex_method", "a.py", f"f{i}", i, i, "high", "defect", "r", "{}") for i in range(5)
+        ]
+        # Two partners of one file share a hosted key: queued once.
+        rows += [("hidden_coupling", "a.py", None, None, None, "medium", "advisory", "r", "{}")] * 2
+        db.executemany("INSERT INTO health_findings VALUES (?,?,?,?,?,?,?,?,?)", rows)
+    queued = labels.queue_rows(root, "health", set(), per_cell=3)
+    assert [r["tier"] for r in queued].count("complex_method") == 3
+    assert [r["tier"] for r in queued].count("hidden_coupling") == 1
+    assert all(r["label"] is None and len(r["sha"]) == 40 for r in queued)
+    only = labels.queue_rows(root, "health", set(), tiers={"hidden_coupling"})
+    assert [r["tier"] for r in only] == ["hidden_coupling"]
+    done = {r["finding_key"] for r in queued}
+    assert len(labels.queue_rows(root, "health", done, per_cell=3)) == 2  # the rest

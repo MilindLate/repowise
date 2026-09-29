@@ -59,6 +59,11 @@ One JSON object per line in `labels/<repo>/dead_code.jsonl`,
   misread badly enough that the finding is wrong.
 
 `perf_n_plus_one` scores only findings whose text says "N+1".
+`tests/fixtures/perf_corpus` is not a label source: its goldens are the
+analyzer's own output over synthetic observations with no source code, so
+using them would grade the analyzer against itself. Its hand-authored case
+names are the same archetypes (`batch_form_equivalent` is a true N+1,
+`retry_loop` is inherent) and are a good calibration read before labelling.
 
 ## Reason codes
 
