@@ -227,15 +227,16 @@ async def get_dead_code_summary(session: AsyncSession, repository_id: str) -> di
             summary["medium"] += 1
         else:
             summary["low"] += 1
-        total_lines += f.lines
+        total_lines += f.lines or 0
         by_kind[f.kind] = by_kind.get(f.kind, 0) + 1
 
     # Re-derive effective safety from confidence + path risk factors rather
     # than trusting the persisted boolean alone, so findings written before the
     # risk-factor logic existed (or in a config/bootstrap/database/environment
     # file the allowlist missed) are not counted as deletion-ready.
+    # Totals sum the known counts; an unknown (NULL) count adds nothing.
     deletable_lines = sum(
-        f.lines
+        f.lines or 0
         for f in findings
         if effective_safe_to_delete(f.confidence, f.file_path, f.safe_to_delete)
     )
