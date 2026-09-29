@@ -376,7 +376,10 @@ class EditorFileDataFetcher:
         # zero-total-weight fallback to a plain mean. The empty case cannot
         # reach it — ``metric_rows`` is checked above.
         avg = nloc_weighted_score(metric_rows)
-        worst = min(metric_rows, key=lambda m: m.score)
+        # The worst file and the critical list name production files: a test
+        # is not the file an agent should be told to handle with care.
+        test_paths = {m.file_path for m in metric_rows if m.is_test}
+        worst = min([m for m in metric_rows if not m.is_test] or metric_rows, key=lambda m: m.score)
 
         # Hotspot-flagged paths, and the hotspot KPI over them. Both come from
         # the shared owners now; this file used to re-derive the same weighted
@@ -457,6 +460,8 @@ class EditorFileDataFetcher:
         for f in all_findings:
             if len(critical) >= 5:
                 break
+            if f.file_path in test_paths:
+                continue
             if f.biomarker_type == "brain_method" or (
                 f.severity == "critical" and f.file_path in hotspot_paths
             ):

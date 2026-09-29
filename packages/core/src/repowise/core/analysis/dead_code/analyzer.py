@@ -1067,9 +1067,9 @@ class DeadCodeAnalyzer:
         if risk_factors:
             confidence = min(confidence, RISK_CAP_CONFIDENCE)
 
-        safe = confidence >= SAFE_CONFIDENCE_THRESHOLD
-        if safe and self._matches_dynamic_patterns(node, dynamic_patterns):
-            safe = False
+        # A whole file is a review candidate, never deletion-ready: see
+        # ``REVIEW_ONLY_KINDS``. Confidence still ranks it.
+        safe = False
 
         evidence = ["in_degree=0 (no files import this)"]
         if no_git_signal:

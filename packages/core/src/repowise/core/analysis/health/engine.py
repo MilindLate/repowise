@@ -112,6 +112,11 @@ log = structlog.get_logger(__name__)
 # and a declining call's arguments are not scanned, so an assertion passed as an
 # argument still does not stand in for the header's oracle.
 #
+# v36: ``io_in_loop`` says "N+1 query" only on a database boundary and "I/O
+# call inside a loop" otherwise; ``serial_await_in_loop`` is silent on a line
+# ``io_in_loop`` already reports; ``primitive_obsession`` (shown as "long
+# parameter list") skips test cases. Stored reasons and finding counts change.
+#
 # v35: the update's full re-score reads every stored git column, so the
 # percentile gates of ``prior_defect`` and ``co_change_scatter`` see their
 # inputs, and it keeps the stored blame-marker findings it cannot recompute.
@@ -321,7 +326,7 @@ log = structlog.get_logger(__name__)
 # forms. Files that were counted untested and are not become tested, which
 # moves untested-hotspot findings and the scores that carry them, on every
 # language with a prefix or spec convention rather than Ruby alone.
-HEALTH_ANALYZER_VERSION = 35
+HEALTH_ANALYZER_VERSION = 36
 
 
 def walked_functions(

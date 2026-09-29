@@ -75,10 +75,14 @@ def sort_metrics_worst_first(rows: Sequence[Any], deductions: Mapping[str, float
 
 
 def worst_metric(rows: Iterable[Any], deductions: Mapping[str, float]) -> Any | None:
-    """The single worst row under the same key, or ``None`` for no rows.
+    """The single worst production row under the same key, or ``None`` for no rows.
 
-    Identical to ``sort_metrics_worst_first(rows, deductions)[0]`` without
-    sorting the tail. Sharing the key is what keeps a repo's headline "worst
-    performer" from naming a different file than the worst-files list under it.
+    Identical to ``sort_metrics_worst_first(rows, deductions)[0]`` over the
+    production rows without sorting the tail. Sharing the key is what keeps a
+    repo's headline "worst performer" from naming a different file than the
+    worst-files list under it. Test files are ranked separately, so a test only
+    answers when there is no production row at all.
     """
-    return min(rows, key=lambda row: worst_first_key(row, deductions), default=None)
+    rows = list(rows)
+    production = [row for row in rows if not field(row, "is_test", False)]
+    return min(production or rows, key=lambda row: worst_first_key(row, deductions), default=None)
