@@ -1,0 +1,114 @@
+# Precision floors enforced by score.py. See score.py's docstring for the
+# row formats and how each key is checked.
+#
+# Keys per [family.<name>] (<name> is a family, or <family>.<tier>):
+#   precision            pooled point estimate floor
+#   precision_ci_low     pooled Wilson 95% lower-bound floor
+#   min_n                pooled number of judged findings required
+#   precision_per_repo   floor for each repo on its own
+#   recall / recall_per_repo   floors against oracle truth sets
+#   min_findings         pooled finding-count floor
+#   min_confidence       score only findings at or above this confidence
+#   per_tier             apply `precision` to each tier separately
+#   ece_max              overrides [calibration].ece_max
+#   metrics.<m> = {min|max}    bounds on oracle metrics rows, per repo
+#
+# Anti-gaming (rule R1): every family carries a recall floor or, where no
+# complete oracle exists, a finding-count floor, so precision can't be
+# bought by emitting nothing. The recall and count floors are provisional
+# until H4 records dev-split baselines; tighten them to baseline minus a
+# tolerance then. "or hidden" families have no count floor: hiding them is
+# the allowed alternative to meeting the precision floor.
+
+[calibration]
+ece_max = 0.05
+bins = 10
+
+[family."dead_code.safe_to_delete"]
+precision = 0.95
+precision_ci_low = 0.90
+min_n = 60
+min_findings = 60
+
+[family."dead_code.high"]
+precision = 0.90
+min_findings = 30
+
+[family."dead_code.review"]
+precision = 0.70
+
+[family.dead_code]
+recall = 0.50        # against the H6 mention oracle
+min_findings = 100
+
+[family.unused_internal]
+precision = 0.80     # or hidden
+
+[family.imports]
+precision = 0.98
+recall = 0.90
+recall_per_repo = 0.85
+min_findings = 1000
+
+[family."imports.python"]   # family "imports.python" or tier "python"
+precision = 0.99
+recall = 0.90
+
+[family.calls]
+min_confidence = 0.9
+precision = 0.95
+recall = 0.50
+min_findings = 500
+
+[family.entry_points]
+metrics.p_at_5 = { min = 0.95 }
+metrics.recall = { min = 0.80 }
+
+[family.identity]
+metrics.b3_precision = { min = 0.99 }
+metrics.b3_recall = { min = 0.90 }
+metrics.person_count_error = { max = 0.05 }
+
+[family.health]
+per_tier = true      # tier = finding type
+precision = 0.85
+min_findings = 50
+
+[family.perf_n_plus_one]
+precision = 0.80     # or hidden
+
+[family.get_answer]
+precision = 0.85
+precision_per_repo = 0.80
+min_findings = 25
+
+[family."get_answer.high"]
+precision = 0.95
+
+[family."get_answer.not_confidently_wrong"]
+precision = 0.97     # confidently wrong <= 3%
+
+[family."get_answer.trap_refused"]
+precision = 1.0
+
+[family."get_answer.citation_resolves"]
+precision = 0.95
+
+[family."search.symbol_top1"]
+precision = 0.90
+
+[family."search.concept_top5"]
+precision = 0.80
+
+[family."search.no_duplicate_files_top5"]
+precision = 1.0
+
+[family."search.fake_name_empty"]
+precision = 1.0
+
+[family.wiki]
+precision = 0.95     # supported
+recall = 0.60        # truth = baseline supported claims: keep >= 60%
+
+[family."wiki.not_wrong"]
+precision = 0.98     # wrong <= 2%
