@@ -15,6 +15,7 @@ from repowise.server.mcp_server.tool_search import (
     _fetch_limit_for,
     _has_exact_symbol,
     _is_why_shaped,
+    _looks_like_code_name,
     _resolve_mode,
 )
 
@@ -118,3 +119,26 @@ def test_a_language_word_is_an_identifier_only_when_a_symbol_carries_it() -> Non
 def test_resolve_mode_routes_on_validated_identifiers() -> None:
     assert _resolve_mode("how does executeWithTool work", None, _NAMES) == "hybrid"
     assert _resolve_mode("how does the TypeScript client work", None, _NAMES) == "concept"
+
+
+@pytest.mark.parametrize(
+    "token",
+    [
+        "executeToolWithRetryBackoff",
+        "getToolkitMigrationPlan",
+        "AnthropicStreamingAdapter",
+        "validate_trigger_nonce",
+        "OpenAIProvider",
+        "MAX_RETRIES",
+        "client.proxyExecute",
+    ],
+)
+def test_code_shaped_names(token) -> None:
+    assert _looks_like_code_name(token)
+
+
+@pytest.mark.parametrize(
+    "token", ["TypeScript", "JavaScript", "GitHub", "PostgreSQL", "iPhone", "macOS", "Python", "API"]
+)
+def test_product_and_language_words_are_not_code_shaped(token) -> None:
+    assert not _looks_like_code_name(token)

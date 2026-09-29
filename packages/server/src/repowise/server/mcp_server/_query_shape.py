@@ -183,6 +183,24 @@ def _embedded_identifiers(query: str, names: Container[str] | None = None) -> li
     return out
 
 
+_CAMEL_HUMP_RE = re.compile(r"[A-Z]+(?![a-z])|[A-Z][a-z0-9]*|[a-z0-9]+")
+_LOWER_CAMEL_RE = re.compile(r"[a-z]{2,}[a-z0-9]*[A-Z][a-z]")
+
+
+def _looks_like_code_name(token: str) -> bool:
+    """Shaped so no prose word or product name fits it.
+
+    snake_case, lowerCamel (``proxyExecute``), or three or more capitalised
+    humps (``AnthropicStreamingAdapter``). ``TypeScript``, ``GitHub``,
+    ``iPhone`` and ``macOS`` do not fit, so a name like them that matches no
+    symbol never reads as "that symbol does not exist".
+    """
+    leaf = token.rsplit(".", 1)[-1].strip("_")
+    if "_" in leaf or _LOWER_CAMEL_RE.match(leaf):
+        return True
+    return leaf[:1].isupper() and len(_CAMEL_HUMP_RE.findall(leaf)) >= 3
+
+
 def _identifier_candidates(query: str, mode: str, names: Container[str] | None = None) -> list[str]:
     """Identifier tokens the query is asking after, for the exact-match signal.
 

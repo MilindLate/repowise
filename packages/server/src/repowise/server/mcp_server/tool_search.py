@@ -50,6 +50,7 @@ from repowise.server.mcp_server._query_shape import (
     _has_exact_symbol,
     _identifier_candidates,
     _is_why_shaped,
+    _looks_like_code_name,
     _looks_like_exact_token,
     _qual_norm,
     _resolve_mode,
@@ -117,6 +118,12 @@ def _prose_dominates(query: str, identifiers: list[str]) -> bool:
         return False
     total = len(re.findall(r"[A-Za-z0-9_]+", query))
     return (total - ident_count) > ident_count
+
+
+# The label and confidence ceiling on the pages a search returns for a named
+# symbol that is not indexed: they answer the prose around the name at best.
+NOT_THE_NAMED_SYMBOL = "related, not the named symbol"
+_NOT_THE_NAMED_SYMBOL_CONFIDENCE = 0.45
 
 
 def _interleave_hybrid(
@@ -891,6 +898,22 @@ async def _structured_search(
     # Computed once here so the hybrid interleave and the exact-match note below
     # agree on the same signal.
     exact = _has_exact_symbol(candidates, symbols) if candidates else False
+    # A code-shaped name that no indexed symbol carries does not exist here.
+    # Its fuzzy neighbours would stand in for it, so the symbol half is empty
+    # and the pages are labelled as related to the question, not the symbol.
+    missing = (
+        [c for c in candidates if _looks_like_code_name(c)]
+        if candidates and not exact and not canonical_symbol
+        else []
+    )
+    if missing:
+        symbols = []
+        for item in concepts:
+            item["relation"] = NOT_THE_NAMED_SYMBOL
+            if "confidence_score" in item:
+                item["confidence_score"] = min(
+                    item["confidence_score"], _NOT_THE_NAMED_SYMBOL_CONFIDENCE
+                )
 
     if mode == "symbol":
         results = symbols[:limit]
@@ -935,7 +958,14 @@ async def _structured_search(
     # ``exact`` were computed above so ordering and this note stay consistent.
     if candidates:
         response["exact_match"] = exact
-        if not exact:
+        if missing:
+            shown = ", ".join(repr(c) for c in missing[:3])
+            response["note"] = (
+                f"No indexed symbol is named {shown}, so no symbol is returned "
+                f"for it. Any page here is {NOT_THE_NAMED_SYMBOL}. Recheck the "
+                "spelling, or search a shorter part of the name. " + EXHAUSTIVE_SWEEP_HINT
+            )
+        elif not exact:
             shown = ", ".join(repr(c) for c in candidates[:3])
             response["note"] = (
                 f"No indexed symbol exactly matches {shown}. The results are "
