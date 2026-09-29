@@ -1604,6 +1604,7 @@ export interface GitMetadataResponse {
   primary_owner_name: string | null;
   primary_owner_email: string | null;
   primary_owner_commit_pct: number | null;
+  primary_owner_line_pct?: number | null;
   recent_owner_name: string | null;
   recent_owner_commit_pct: number | null;
   top_authors: Record<string, unknown>[];
@@ -2156,7 +2157,7 @@ export interface OwnerListEntry {
   silo_modules: number;
   dead_code_files_owned: number;
   dead_code_lines_owned: number;
-  commit_count_90d: number;
+  commit_count_90d: number | null;
   last_commit_at: string | null;
   bus_factor_risk_files: number;
 }
@@ -2177,7 +2178,7 @@ export interface OwnerProfileResponse {
   silo_modules: number;
   dead_code_files_owned: number;
   dead_code_lines_owned: number;
-  commit_count_90d: number;
+  commit_count_90d: number | null;
   last_commit_at: string | null;
   first_commit_at: string | null;
   bus_factor_risk_files: number;
