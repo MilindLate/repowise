@@ -81,6 +81,23 @@ _JAVA_CASES = [
         [],
         "a plain helper call in a loop is not a sink",
     ),
+    (
+        "class A{void m(java.util.List<String> hosts){"
+        "for(String h:hosts){ InetAddress.getByName(h); }}}",
+        [],
+        "a static factory is not a derived query despite matching ...By[A-Z]",
+    ),
+    (
+        "class A{void m(java.util.List<Object> ks){for(Object k:ks){ findByObject(k); }}}",
+        [],
+        "a class's own bare ...By helper (an in-memory map lookup) is not a derived query",
+    ),
+    (
+        "class A{void m(java.util.List<String> ids){"
+        "for(String id:ids){ userRepository.findByEmail(id); }}}",
+        [("io_in_loop", "db")],
+        "a derived query on a repository instance still classifies",
+    ),
 ]
 
 
@@ -816,6 +833,20 @@ def test_scala_fixture_counts():
 
 
 _SCALA_CASES = [
+    (
+        "object A { def m(hosts: List[String]): Unit = {\n"
+        "  for (h <- hosts) { InetAddress.getByName(h) }\n"
+        "} }\n",
+        [],
+        "a static factory is not a derived query despite matching ...By[A-Z]",
+    ),
+    (
+        "object A { def m(ids: List[Long], userRepository: Repo): Unit = {\n"
+        "  for (id <- ids) { userRepository.findByEmail(id) }\n"
+        "} }\n",
+        [("io_in_loop", "db")],
+        "a derived query on a repository instance still classifies",
+    ),
     (
         "import slick.jdbc.PostgresProfile.api._\n"
         "object A { def m(ids: List[Long], db: Database): Unit = {\n"

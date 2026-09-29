@@ -144,7 +144,8 @@ class ScalaPerfDialect(BasePerfDialect):
             return "network"
         if method in JDBC_METHODS or method in JPA_METHODS or method in SPRING_REPO_METHODS:
             return "db"
-        if _SPRING_DERIVED.match(method):
+        # On a repository instance only, as in the Java lexicon.
+        if _SPRING_DERIVED.match(method) and is_attribute and root[:1].islower():
             return "db"
         if root == "Files" and method in FILES_METHODS:
             return "filesystem"

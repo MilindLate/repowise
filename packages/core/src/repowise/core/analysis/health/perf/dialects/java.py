@@ -187,7 +187,11 @@ class JavaPerfDialect(BasePerfDialect):
             return "network"
         if method in JDBC_METHODS or method in JPA_METHODS or method in SPRING_REPO_METHODS:
             return "db"
-        if _SPRING_DERIVED.match(method):
+        # A Spring-Data derived query is called on a repository INSTANCE, so the
+        # receiver is lower-cased. That excludes a static factory
+        # (``InetAddress.getByName``) and a class's own bare helper that shares
+        # the shape (an in-memory tree map's ``findByObject(key)``).
+        if _SPRING_DERIVED.match(method) and is_attribute and root[:1].islower():
             return "db"
         if method in REST_TEMPLATE_METHODS:
             return "network"

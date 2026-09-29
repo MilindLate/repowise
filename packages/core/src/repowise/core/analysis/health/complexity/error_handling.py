@@ -72,6 +72,13 @@ def _eh_body_is_swallowed(block: Node, language: str) -> bool:
     return len(real) == 0
 
 
+def _eh_body_ends_in_raise(block: Node, language: str) -> bool:
+    """The handler's last real statement is a ``raise``: it cleans up or
+    translates, then propagates, so nothing is swallowed however broad it is."""
+    real = [c for c in _eh_named(block) if not _eh_is_trivial_stmt(c, language)]
+    return bool(real) and real[-1].type == "raise_statement"
+
+
 def _eh_except_catch_all_name(clause: Node) -> tuple[bool, str | None]:
     """``(is_catch_all, leading_type_name)`` for a Python ``except`` clause.
 
@@ -234,7 +241,11 @@ def _collect_error_handling(
             block = _eh_find_body_block(node)
             if block is not None and _eh_body_is_swallowed(block, language):
                 hits.append(ErrorHandlingHit("swallowed_catch", node.start_point[0] + 1))
-            if is_python and _eh_is_bare_except(node):
+            if (
+                is_python
+                and _eh_is_bare_except(node)
+                and not (block is not None and _eh_body_ends_in_raise(block, language))
+            ):
                 # ``except:`` / ``except BaseException:`` also swallow
                 # KeyboardInterrupt & SystemExit; ``except Exception:`` cannot.
                 kind = "bare_except" if _eh_catches_base(node) else "broad_except"
