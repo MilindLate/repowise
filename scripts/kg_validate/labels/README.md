@@ -30,14 +30,12 @@ listed stay as git/mailmap clusters them. Emails are case-insensitive.
 {"person": "Jane Doe", "emails": ["jane@example.com", "12345+jdoe@users.noreply.github.com"], "evidence": "same GitHub login in PR history"}
 ```
 
-## Finding labels (`<family>.jsonl`, read by `score.py --labels`)
+## Finding labels (`dead_code.jsonl`, `health.jsonl`, `perf.jsonl`)
 
-One verdict per finding, keyed by the finding's `key`:
+One verdict (or queue) row per finding, keyed by the hosted finding id. The
+format, labels, reason codes, sampling and agreement rules are in
+`../LABELING.md`; `../labels.py` loads, samples and checks them, and
+`run.py --precision --families dead_code,health,perf` scores them.
 
-```json
-{"family": "dead_code", "finding_key": "src/old.py", "label": "tp", "note": "no references, not a plugin"}
-```
-
-`label` is `tp`/`fp` (also `true`/`false`, `correct`/`wrong`, `yes`/`no`);
-`unsure` is ignored. `repo` is implied by the directory when scored with
-`--repo <repo>`.
+`score.py --labels` also accepts the generic form
+`{"family": ..., "finding_key": ..., "label": "tp"}` for ad-hoc findings files.

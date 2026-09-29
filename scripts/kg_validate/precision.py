@@ -8,20 +8,31 @@ A per-repo *result* is the compact JSON committed as
      "families": {
        "imports": {"python": {"tp": 1, "fp": 0, "fn": 2, "dst_not_indexed": 0}},
        "entry_points": {"p_at_5": 0.8, "recall": 0.5, ...},
-       "identity": {"b3_precision": 1.0, "b3_recall": 0.9, "person_count_error": 0.1, ...}}}
+       "identity": {"b3_precision": 1.0, "b3_recall": 0.9, "person_count_error": 0.1, ...},
+       "dead_code": {"tiers": {"safe_to_delete": {"findings": 12, "tp": 3, "fp": 1,
+                                                  "by_source": {"oracle": {"tp": 2, "fp": 0}, ...}}}},
+       "perf": {"tiers": {...}, "n_plus_one": {"findings": 4, "tp": 0, "fp": 2, ...}}}}
 
 Imports keep raw per-language counts rather than rates, so pooled floors
 (``score.evaluate``) can be recomputed for any repo subset from baselines
-alone, and a baseline's floor failures can be told apart from new ones.
+alone, and a baseline's floor failures can be told apart from new ones. The
+labelled families (dead_code, health, perf) keep per-tier counts the same way:
+``findings`` emitted, ``tp``/``fp`` judged by labels or the mention oracle,
+the rest unlabelled (see labels.py and LABELING.md).
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
+import labels as label_store
 import score
 
-FAMILIES = ("imports", "entry_points", "identity")
+# Mechanical oracles run by default; the labelled families are opt-in
+# (``--families dead_code,health,perf``) because their floors need labels.
+DEFAULT_FAMILIES = ("imports", "entry_points", "identity")
+LABELLED_FAMILIES = ("dead_code", "health", "perf")
+FAMILIES = DEFAULT_FAMILIES + LABELLED_FAMILIES
 SPLITS = ("dev", "heldout", "all")
 # A rate that moves the wrong way by more than this is a regression (R2).
 REGRESSION_PP = 0.02
@@ -84,20 +95,49 @@ def family_metrics(result: dict) -> dict[str, dict[str, float | None]]:
     for fam, names in METRICS.items():
         if fam in fams:
             out[fam] = {m: fams[fam].get(m) for m in names}
+    for view, cells in labelled_cells(result).items():
+        tp = sum(c["tp"] for c in cells.values())
+        fp = sum(c["fp"] for c in cells.values())
+        out[view] = {"precision": _rate(tp, tp + fp)}
+        for tier, c in cells.items():
+            if tier != ALL_TIERS:
+                out[f"{view}.{tier}"] = {"precision": _rate(c["tp"], c["tp"] + c["fp"])}
     return out
 
 
-def score_inputs(results: list[dict]) -> tuple[list[dict], list[dict], list[dict]]:
-    """(findings, truth, metrics) rows for ``score.judge`` from results.
+ALL_TIERS = "*"  # the single cell of a view with no tiers (perf_n_plus_one)
+
+
+def labelled_cells(result: dict) -> dict[str, dict[str, dict]]:
+    """``{view: {tier: counts}}`` for the labelled families in one result.
+
+    ``perf`` carries a second view, ``perf_n_plus_one``: the findings whose
+    text says "N+1", judged on whether it is one.
+    """
+    fams = result.get("families", {})
+    out = {}
+    for fam in LABELLED_FAMILIES:
+        if fam in fams:
+            out[fam] = fams[fam].get("tiers", {})
+            if "n_plus_one" in fams[fam]:
+                out[f"{fam}_n_plus_one"] = {ALL_TIERS: fams[fam]["n_plus_one"]}
+    return out
+
+
+def score_inputs(results: list[dict]) -> tuple[list[dict], list[dict], list[dict], list[dict]]:
+    """(findings, truth, metrics, labels) rows for ``score.judge`` from results.
 
     Import counts expand to synthetic keyed rows: ``tp`` findings in truth,
     ``fp`` findings outside it, ``fn`` truth never found. Each language is
     emitted under family ``imports`` (tier = language) and again as family
     ``imports.<lang>``, so per-language floors get their own recall.
+    Labelled-family counts expand to one finding row per finding and one
+    label row per judged finding; the rest stay unlabelled.
     """
     findings: list[dict] = []
     truth: list[dict] = []
     metrics: list[dict] = []
+    labels: list[dict] = []
     for res in results:
         repo = res["repo"]
         fams = res.get("families", {})
@@ -117,12 +157,71 @@ def score_inputs(results: list[dict]) -> tuple[list[dict], list[dict], list[dict
                 value = fams.get(fam, {}).get(m)
                 if value is not None:
                     metrics.append({"repo": repo, "family": fam, "metric": m, "value": value})
-    return findings, truth, metrics
+        for view, cells in labelled_cells(res).items():
+            for tier, c in cells.items():
+                for i in range(c["findings"]):
+                    key = f"{tier}:{i}"
+                    t = None if tier == ALL_TIERS else tier
+                    findings.append({"repo": repo, "family": view, "key": key, "tier": t})
+                    if i < c["tp"] + c["fp"]:
+                        verdict = "tp" if i < c["tp"] else "fp"
+                        labels.append(
+                            {"repo": repo, "family": view, "finding_key": key, "label": verdict}
+                        )
+    return findings, truth, metrics, labels
 
 
 def evaluate_results(results: list[dict], thresholds: dict) -> list[score.Check]:
-    findings, truth, metrics = score_inputs(results)
-    return score.evaluate(score.judge(findings, truth, [], metrics), thresholds)
+    findings, truth, metrics, labels = score_inputs(results)
+    return score.evaluate(score.judge(findings, truth, labels, metrics), thresholds)
+
+
+def label_debt(results: list[dict], thresholds: dict) -> list[dict]:
+    """Gated cells whose judged sample is below the protocol target.
+
+    A cell is gated when a floor applies to it: ``[family."<view>.<tier>"]``,
+    ``[family.<view>]`` with ``per_tier``, or ``[family.<view>]`` for a view
+    without tiers. Its findings are then scored only on the judged sample,
+    so an unlabelled gated cell is precision nobody has measured.
+    """
+    floors = thresholds.get("family", {})
+    out = []
+    for res in results:
+        for view, cells in labelled_cells(res).items():
+            for tier, c in cells.items():
+                gated = (
+                    f"{view}.{tier}" in floors
+                    or floors.get(view, {}).get("per_tier")
+                    or (tier == ALL_TIERS and view in floors)
+                )
+                missing = label_store.debt(c)
+                if gated and missing:
+                    out.append(
+                        {
+                            "repo": res["repo"],
+                            "cell": view if tier == ALL_TIERS else f"{view}.{tier}",
+                            "findings": c["findings"],
+                            "judged": c["tp"] + c["fp"],
+                            "missing": missing,
+                        }
+                    )
+    return out
+
+
+def render_debt(rows: list[dict]) -> str:
+    if not rows:
+        return ""
+    lines = [
+        f"LABEL DEBT: {len(rows)} gated cell(s) below the LABELING.md sample target "
+        "(precision there is unmeasured, not good):",
+        "| repo | cell | findings | judged | labels missing |",
+        "|---|---|---:|---:|---:|",
+    ]
+    for r in rows:
+        lines.append(
+            f"| {r['repo']} | {r['cell']} | {r['findings']} | {r['judged']} | {r['missing']} |"
+        )
+    return "\n".join(lines) + "\n"
 
 
 def check_key(c: score.Check) -> tuple[str, str, str]:
@@ -155,7 +254,25 @@ def aggregate(results: list[dict], name: str = HELDOUT) -> dict:
                     vals[m].append(v)
         if any(vals.values()):
             fams[fam] = {m: (sum(v) / len(v) if v else None) for m, v in vals.items()}
+    for res in results:
+        for fam in LABELLED_FAMILIES:
+            src = res.get("families", {}).get(fam)
+            if src is None:
+                continue
+            acc = fams.setdefault(fam, {"tiers": {}})
+            cells = [
+                (acc["tiers"].setdefault(t, _empty_cell()), c) for t, c in src["tiers"].items()
+            ]
+            if "n_plus_one" in src:
+                cells.append((acc.setdefault("n_plus_one", _empty_cell()), src["n_plus_one"]))
+            for into, c in cells:
+                for k in ("findings", "tp", "fp"):
+                    into[k] += c[k]
     return {"repo": name, "repos": len(results), "families": fams}
+
+
+def _empty_cell() -> dict:
+    return {"findings": 0, "tp": 0, "fp": 0}
 
 
 @dataclass
