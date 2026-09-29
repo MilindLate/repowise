@@ -17,10 +17,14 @@ Usage (from the repo root):
     python scripts/kg_validate/run.py --precision --ci fast --compare \
         scripts/kg_validate/precision_baselines/     # the per-PR CI set
     python scripts/kg_validate/run.py --precision --update-precision-baselines
+    # the call-edge oracle is opt-in (needs jedi; see requirements-oracles.txt)
+    python scripts/kg_validate/run.py --precision --repos httpx --families calls
 
 Environment:
     KG_VALIDATE_DIR   clone/work dir (default /tmp/kg-validate)
     REPOWISE_PY       python used to run the indexer (default: this python)
+    REPOWISE_ORACLE_PY  python with jedi for the calls oracle (default: this python)
+    REPOWISE_ORACLE_TS  the `typescript` npm package dir for the TS oracles
 
 Each repo is cloned at its pinned SHA from matrix.toml, indexed with
 REPOWISE_KG_CURATION=1, and its exported knowledge-graph.json is checked by
@@ -192,6 +196,7 @@ def predicted_identities(db_path: Path) -> list[list[str]]:
 
 def measure_repo(name: str, spec: dict, families: list[str], *, skip_index: bool) -> dict:
     """Index one repo and grade it against the oracles for ``families``."""
+    from oracles import calls as calls_oracle
     from oracles import entry_points as ep_oracle
     from oracles import identity as id_oracle
     from oracles import imports as imp_oracle
@@ -223,6 +228,10 @@ def measure_repo(name: str, spec: dict, families: list[str], *, skip_index: bool
         truth = id_oracle.truth_clusters(dest, id_oracle.load_alias_sets(name))
         predicted_ids = predicted_identities(dest / ".repowise" / "wiki.db")
         fams["identity"] = id_oracle.score(predicted_ids, truth)
+    if "calls" in families:
+        fams["calls"] = calls_oracle.measure(dest, dest / ".repowise" / "wiki.db")
+        for lang, why in fams["calls"].get("unavailable", {}).items():
+            print(f"  calls: {lang} unavailable, not graded: {why}")
     return result
 
 
@@ -327,7 +336,11 @@ def main() -> int:
     ap.add_argument(
         "--ci", choices=("fast", "nightly"), help="only repos with this matrix.toml ci tier"
     )
-    ap.add_argument("--families", default=",".join(precision.FAMILIES))
+    ap.add_argument(
+        "--families",
+        default=",".join(precision.DEFAULT_FAMILIES),
+        help=f"comma-separated subset of {','.join(precision.FAMILIES)}",
+    )
     ap.add_argument("--compare", metavar="DIR", help="precision baselines to diff against")
     ap.add_argument(
         "--update-precision-baselines",

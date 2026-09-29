@@ -11,6 +11,10 @@
 //   stdin:  JSON array of repo-relative tracked file paths
 //   stdout: JSON {"edges": [[src, dst], ...], "unresolved": {src: [spec, ...]}}
 //
+// Imported as a module (ts_calls.mjs), it runs nothing: the importer passes the
+// same --root/--ts-path argv, calls init(files), then uses resolveOne and
+// fileOptions.
+//
 // Finding `typescript`: --ts-path, else $REPOWISE_ORACLE_TS, else a normal
 // require from this script's directory upward (a repo checkout with
 // node_modules), else from the analysed repo. See imports.py for setup.
@@ -18,6 +22,7 @@
 import { createRequire } from "node:module";
 import fs from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 const args = process.argv.slice(2);
 const argVal = (name) => {
@@ -53,14 +58,9 @@ function loadTs() {
 }
 const ts = loadTs();
 
-const files = JSON.parse(fs.readFileSync(0, "utf8"));
-const tracked = new Set(files);
-const trackedDirs = new Set();
-for (const f of files) {
-  for (let d = path.posix.dirname(f); d !== "." && !trackedDirs.has(d); d = path.posix.dirname(d)) {
-    trackedDirs.add(d);
-  }
-}
+// The tracked file list, set by init().
+let files = [];
+let tracked = new Set();
 const SRC_RE = /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$/;
 const TS_EXT = [".ts", ".tsx", ".mts", ".cts", ".d.ts", ".js", ".jsx", ".mjs", ".cjs", ".json"];
 const rel = (abs) => path.relative(ROOT, abs).split(path.sep).join("/");
@@ -262,7 +262,9 @@ function globToRegExp(g) {
 }
 
 const workspaces = new Map(); // package name → {dir, pj}
-{
+function init(fileList) {
+  files = fileList;
+  tracked = new Set(files);
   const globs = workspaceGlobs();
   const include = globs.filter((g) => !g.startsWith("!")).map(globToRegExp);
   const exclude = globs.filter((g) => g.startsWith("!")).map((g) => globToRegExp(g.slice(1)));
@@ -374,45 +376,53 @@ function moduleSpecifiers(file, text) {
   return specs;
 }
 
+// Solution-style configs pick options per file; plain configs share one
+// options object (and so one resolution cache).
 const optionsByConfig = new Map();
-const edges = [];
-const unresolved = {};
-for (const file of files) {
-  if (!SRC_RE.test(file) || file.includes("node_modules/")) continue;
-  let text;
-  try {
-    text = fs.readFileSync(path.join(ROOT, file), "utf8");
-  } catch {
-    continue;
-  }
-  // Solution-style configs pick options per file; plain configs share one
-  // options object (and so one resolution cache).
+function fileOptions(file) {
   const cfgKey = nearestConfig(path.posix.dirname(file)) || "";
   const parsed = cfgKey ? parseConfig(cfgKey) : null;
-  let options;
-  if (parsed && (parsed.projectReferences || []).length) options = optionsFor(file);
-  else {
-    if (!optionsByConfig.has(cfgKey)) optionsByConfig.set(cfgKey, optionsFor(file));
-    options = optionsByConfig.get(cfgKey);
-  }
-  const specs = moduleSpecifiers(file, text);
-  const seen = new Set();
-  for (const spec of specs) {
-    let dst;
+  if (parsed && (parsed.projectReferences || []).length) return optionsFor(file);
+  if (!optionsByConfig.has(cfgKey)) optionsByConfig.set(cfgKey, optionsFor(file));
+  return optionsByConfig.get(cfgKey);
+}
+
+export { ROOT, ts, init, resolveOne, fileOptions };
+
+function main() {
+  init(JSON.parse(fs.readFileSync(0, "utf8")));
+  const edges = [];
+  const unresolved = {};
+  for (const file of files) {
+    if (!SRC_RE.test(file) || file.includes("node_modules/")) continue;
+    let text;
     try {
-      dst = resolveOne(file, spec, options);
+      text = fs.readFileSync(path.join(ROOT, file), "utf8");
     } catch {
-      dst = null;
-    }
-    if (dst === undefined) continue; // external package
-    if (dst === null) {
-      (unresolved[file] ||= []).push(spec);
       continue;
     }
-    if (dst !== file && !seen.has(dst)) {
-      seen.add(dst);
-      edges.push([file, dst]);
+    const options = fileOptions(file);
+    const specs = moduleSpecifiers(file, text);
+    const seen = new Set();
+    for (const spec of specs) {
+      let dst;
+      try {
+        dst = resolveOne(file, spec, options);
+      } catch {
+        dst = null;
+      }
+      if (dst === undefined) continue; // external package
+      if (dst === null) {
+        (unresolved[file] ||= []).push(spec);
+        continue;
+      }
+      if (dst !== file && !seen.has(dst)) {
+        seen.add(dst);
+        edges.push([file, dst]);
+      }
     }
   }
+  process.stdout.write(JSON.stringify({ edges, unresolved }));
 }
-process.stdout.write(JSON.stringify({ edges, unresolved }));
+
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) main();

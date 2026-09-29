@@ -1,0 +1,6 @@
+# Graders for the precision harness, never repowise dependencies. Install into
+# a scratch venv and point REPOWISE_ORACLE_PY at its python:
+#   uv venv /tmp/oracle-venv
+#   uv pip install -p /tmp/oracle-venv -r scripts/kg_validate/requirements-oracles.txt
+#   export REPOWISE_ORACLE_PY=/tmp/oracle-venv/bin/python
+jedi==0.20.0
