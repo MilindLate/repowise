@@ -56,7 +56,11 @@ STORE_FORMAT_VERSION: int = 2
 #: without external edges.
 #:
 #: v4: a TypeScript ``#private`` class member reads as ``private`` visibility.
-PARSER_SCHEMA_VERSION: int = 4
+#:
+#: v5: TS/JS JSDoc is read through export / declaration wrappers and past
+#: decorators, must touch the declaration, and a one-line ``/** doc */`` no
+#: longer keeps its closing ``*/``.
+PARSER_SCHEMA_VERSION: int = 5
 
 #: state.json key holding the store format version that wrote the store.
 STORE_FORMAT_VERSION_KEY = "store_format_version"
