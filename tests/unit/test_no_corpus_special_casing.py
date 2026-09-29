@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import ast
 import re
+import subprocess
 import tomllib
 from pathlib import Path
 
@@ -72,11 +73,23 @@ def _prose_ids(tree: ast.AST) -> set[int]:
     }
 
 
+def _source_files(root: Path) -> list[Path]:
+    """Committed sources only: a local scratch file is not shipped code."""
+    listed = subprocess.run(
+        ["git", "-C", str(root), "ls-files", "--", SOURCE_GLOB],
+        capture_output=True,
+        text=True,
+    )
+    if listed.returncode != 0:  # not a git checkout (e.g. an sdist)
+        return sorted(root.glob(SOURCE_GLOB))
+    return sorted(root / line for line in listed.stdout.splitlines() if line)
+
+
 def scan(root: Path, patterns: dict[str, re.Pattern[str]]) -> list[tuple[str, int, str, str]]:
     hits = []
-    for path in sorted(root.glob(SOURCE_GLOB)):
+    for path in _source_files(root):
         rel = path.relative_to(root).as_posix()
-        tree = ast.parse(path.read_text(encoding="utf-8"), filename=rel)
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=rel)
         prose = _prose_ids(tree)
         for node in ast.walk(tree):
             if (
