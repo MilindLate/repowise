@@ -4,7 +4,11 @@
 Truth is the repo's ``.mailmap`` as git applies it: every raw author email
 from ``git log`` (``%ae``) is clustered by its mapped email (``%aE``).
 Hand-labelled alias sets from ``labels/<repo>/identity.jsonl`` (see
-labels/README.md) are unioned on top, for repos without a mailmap.
+labels/README.md) are unioned on top, for repos without a mailmap. GitHub
+noreply addresses of one login (``NNN+login@users.noreply.github.com`` and
+``login@users.noreply.github.com``) are one account by construction, so they
+are joined too; without that, a repo with no mailmap would grade every
+correct merge of them as wrong.
 
 To score a tool's own merging on a repo that maintains a mailmap, the tool
 must run with the mailmap hidden, otherwise it just copies the answer. Git
@@ -32,6 +36,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import re
 import subprocess
 import sys
 from collections import defaultdict
@@ -39,6 +44,7 @@ from collections.abc import Iterable
 from pathlib import Path
 
 LABELS_DIR = Path(__file__).resolve().parent.parent / "labels"
+_GH_NOREPLY = re.compile(r"^(?:\d+\+)?([^@+\s]+)@users\.noreply\.github\.com$")
 
 
 class _UnionFind:
@@ -100,6 +106,10 @@ def truth_clusters(
         # is also some other raw email still joins through union-find.
         uf.union(raw, "\0" + mapped)
     authors = {x for x in uf.parent if not x.startswith("\0")}
+    for email in authors:
+        m = _GH_NOREPLY.match(email)
+        if m:
+            uf.union(email, "\0login:" + m.group(1))
     for aliases in alias_sets:
         present = [e.lower() for e in aliases if e.lower() in authors]
         for e in present[1:]:

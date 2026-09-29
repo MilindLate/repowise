@@ -70,6 +70,10 @@ DEFAULT_EDGE_TYPES = (
     "dynamic_uses",
     "framework",
 )
+# `unresolved` markers for a source whose imports the oracle could not read.
+SYNTAX_ERROR = "<syntax error>"
+NOT_LISTED = "<not in go list>"
+OUT_OF_SCOPE = {SYNTAX_ERROR, NOT_LISTED}
 _SKIP_DIRS = {".git", "node_modules", ".venv", "venv", "__pycache__", ".repowise"}
 
 
@@ -227,7 +231,7 @@ class PythonResolver:
         try:
             tree = ast.parse((self.repo / file).read_bytes())
         except (SyntaxError, ValueError):
-            return set(), ["<syntax error>"]
+            return set(), [SYNTAX_ERROR]
         out: set[str] = set()
         unresolved: list[str] = []
         for node in ast.walk(tree):
@@ -313,8 +317,8 @@ def go_edges(repo: Path, files: list[str]) -> tuple[set, dict]:
         return set(), {}
     go = shutil.which("go")
     if go is None:
-        print("warning: go not installed; Go edges skipped", file=sys.stderr)
-        return set(), {}
+        print("warning: go not installed; Go files left out of scope", file=sys.stderr)
+        return set(), {f: [NOT_LISTED] for f in files if f.endswith(".go")}
     # go list loads the module graph, so it may fetch dependency metadata into
     # the module cache (never into the repo). Each go.mod is listed on its own.
     env = {**os.environ, "GOTOOLCHAIN": "local", "GOWORK": "off", "CGO_ENABLED": "0"}
@@ -363,7 +367,10 @@ def go_edges(repo: Path, files: list[str]) -> tuple[set, dict]:
             for dst in pkg_files.get(imp, ()):
                 if dst != src:
                     edges.add((src, dst))
-    return edges, {}
+    # Files `./...` skips (`_`/`.`-prefixed dirs, testdata) have no package
+    # data to resolve against.
+    skipped = [f for f in files if f.endswith(".go") and f not in sources]
+    return edges, {f: [NOT_LISTED] for f in skipped}
 
 
 # ------------------------------------------------------------------ assembly
@@ -387,7 +394,13 @@ def oracle_edges(repo: Path, langs=("python", "typescript", "go"), ts_path=None)
         e, u = go_edges(repo, files)
         edges |= e
         unresolved.update(u)
-    sources = {f for f in files if lang_of(f) in langs and "node_modules/" not in f}
+    # A file this interpreter can't parse (e.g. newer-Python syntax), or that
+    # `go list` never saw, has unknown imports: leave it out of scope rather
+    # than grade it as importless.
+    unparsed = {f for f, u in unresolved.items() if OUT_OF_SCOPE.intersection(u)}
+    sources = {
+        f for f in files if lang_of(f) in langs and "node_modules/" not in f and f not in unparsed
+    }
     return {"edges": edges, "sources": sources, "unresolved": unresolved}
 
 
