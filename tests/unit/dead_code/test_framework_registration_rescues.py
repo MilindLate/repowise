@@ -163,7 +163,9 @@ def _holder_graph(language: str, wire_call: bool) -> nx.DiGraph:
     )
     holder = "src/GuardExtensions.cs::BasketGuards"
     member = "src/GuardExtensions.cs::BasketGuards::EmptyBasketOnCheckout"
-    graph.add_node(member, node_type="symbol", file_path="src/GuardExtensions.cs", language=language)
+    graph.add_node(
+        member, node_type="symbol", file_path="src/GuardExtensions.cs", language=language
+    )
     graph.add_edge(holder, member, edge_type="has_method")
     if wire_call:
         graph.add_edge("src/Checkout.cs::Checkout", member, edge_type="calls")
@@ -195,7 +197,9 @@ def test_a_container_cannot_rescue_itself_from_the_inside():
     holder = "src/GuardExtensions.cs::BasketGuards"
     sibling = "src/GuardExtensions.cs::BasketGuards::Round"
     member = "src/GuardExtensions.cs::BasketGuards::EmptyBasketOnCheckout"
-    graph.add_node(sibling, node_type="symbol", file_path="src/GuardExtensions.cs", language="csharp")
+    graph.add_node(
+        sibling, node_type="symbol", file_path="src/GuardExtensions.cs", language="csharp"
+    )
     graph.add_edge(holder, sibling, edge_type="has_method")
     graph.add_edge(sibling, member, edge_type="calls")
 
@@ -217,7 +221,9 @@ def test_an_annotation_beside_suppresswarnings_does_not_leak_its_argument():
                         "name": "activate",
                         "kind": "function",
                         "visibility": "public",
-                        "decorators": ['@SuppressWarnings("rawtypes")\n@Named("unused-legacy-bean")'],
+                        "decorators": [
+                            '@SuppressWarnings("rawtypes")\n@Named("unused-legacy-bean")'
+                        ],
                         "start_line": 1,
                         "end_line": 5,
                         "complexity_estimate": 1,
@@ -228,3 +234,61 @@ def test_an_annotation_beside_suppresswarnings_does_not_leak_its_argument():
         },
     )
     assert "activate" in _unused_export_names(graph)
+
+
+# ---------------------------------------------------------------------------
+# Any ``recv.attr`` decorator is a registration unless it only wraps.
+# ---------------------------------------------------------------------------
+
+
+def _decorated(decorator: str, visibility: str) -> nx.DiGraph:
+    return _build_graph(
+        nodes={
+            "pkg/handlers.py": {
+                "symbols": [
+                    {
+                        "name": "handle_thing",
+                        "kind": "function",
+                        "visibility": visibility,
+                        "decorators": [decorator],
+                        "start_line": 1,
+                        "end_line": 4,
+                    },
+                ],
+            },
+        },
+    )
+
+
+def _reported(decorator: str) -> tuple[bool, bool]:
+    """(reported as unused export, reported as unused internal)."""
+    export = "handle_thing" in _unused_export_names(_decorated(decorator, "public"))
+    report = DeadCodeAnalyzer(_decorated(decorator, "private"), git_meta_map={}).analyze(
+        {"detect_unreachable_files": False, "min_confidence": 0.0}
+    )
+    internal = any(f.kind == DeadCodeKind.UNUSED_INTERNAL for f in report.findings)
+    return export, internal
+
+
+def test_receiver_decorators_are_registrations_in_both_passes():
+    for decorator in ("@nox.session", "@sub.handle('created')", "@mcp.tool()", "@bot.on.message"):
+        assert _reported(decorator) == (False, False), decorator
+
+
+def test_pure_wrapper_decorators_are_not_registrations():
+    for decorator in (
+        "@functools.wraps(fn)",
+        "@functools.lru_cache(maxsize=None)",
+        "@typing.override",
+        "@abc.abstractmethod",
+        "@mock.patch('x.y')",
+        "@unittest.mock.patch('x.y')",
+        "@value.setter",
+        "@warnings.deprecated('use other')",
+    ):
+        assert _reported(decorator) == (True, True), decorator
+
+
+def test_a_qualified_annotation_type_is_not_a_receiver():
+    # ``@java.lang.Deprecated``-style: a capitalised last segment names a type.
+    assert _reported("@org.example.Marker") == (True, True)

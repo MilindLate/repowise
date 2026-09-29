@@ -31,6 +31,8 @@ from .constants import (
     _FRAMEWORK_DECORATOR_SUFFIXES,
     _FRAMEWORK_DECORATORS,
     _NEVER_PACKAGE_DIRS,
+    _PURE_WRAPPER_DECORATOR_ATTRS,
+    _PURE_WRAPPER_DECORATOR_MODULES,
     _is_fixture_path,
     never_flag_match,
 )
@@ -194,10 +196,38 @@ def _is_framework_registered(decorators: list[str]) -> bool:
         return True
     if any(b.endswith(_FRAMEWORK_DECORATOR_SUFFIXES) for b in bases):
         return True
+    if any(_is_receiver_registration(b) for b in bases):
+        return True
     return any(
         segment == "register" or segment.startswith("register_")
         for segment in (b.rsplit(".", 1)[-1] for b in bases)
     )
+
+
+def _is_receiver_registration(base: str) -> bool:
+    """Whether a dotted decorator hands the symbol to a receiver object.
+
+    ``@nox.session``, ``@mcp.tool()`` and ``@sub.handle(...)`` are the shape:
+    an attribute of some object, called later by that object. The lists above
+    can only name receivers someone thought of, so the rule is inverted: any
+    ``recv.attr`` is a registration unless it is a pure wrapper (functools,
+    typing, contextlib, ``@x.setter`` and the like), which returns the function
+    for an ordinary caller to call.
+
+    Held to a lowercase attribute. A capitalised last segment is a qualified
+    type name (``@java.lang.Deprecated``, ``[System.Obsolete]``), an annotation
+    rather than a method on a receiver.
+
+    Ceiling: matched on the text, so an aliased wrapper module
+    (``import functools as ft``) reads as a registration. That only ever hides
+    a finding.
+    """
+    receiver, dot, attr = base.rpartition(".")
+    if not dot or not receiver or not attr or not (attr[0].islower() or attr[0] == "_"):
+        return False
+    if receiver.split(".", 1)[0] in _PURE_WRAPPER_DECORATOR_MODULES:
+        return False
+    return attr not in _PURE_WRAPPER_DECORATOR_ATTRS
 
 
 def _is_symbol_deprecated(sym_name: str, decorators: list[str]) -> bool:
