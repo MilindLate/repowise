@@ -215,7 +215,9 @@ def _slugify(text: str) -> str:
 # reaches the export instead of being dropped.
 # "5": `project.packages` lists the detected packages (any depth, workspace
 # members marked ``declared``).
-KG_BUILDER_VERSION = "5"
+# "6": entry points a package manifest declares rank first and survive the
+# barrel and glue drops; ``entry`` is no longer a conventional entry name.
+KG_BUILDER_VERSION = "6"
 
 # An unmapped type is dropped from the export entirely (see the
 # `if not kg_type: continue` below), which is silent. Six real types used to be

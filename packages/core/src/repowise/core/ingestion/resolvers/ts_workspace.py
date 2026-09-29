@@ -33,6 +33,7 @@ import contextlib
 import json
 import posixpath
 import re
+import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -681,6 +682,9 @@ class TsWorkspaceIndex:
 
     packages: dict[str, dict[str, Any]] = field(default_factory=dict)
     exports_entry_paths: set[str] = field(default_factory=set)
+    # Files any ``package.json`` in the repo (workspace member or not) names as
+    # where the package starts: ``bin``, ``main``/``module``, ``exports["."]``.
+    manifest_entry_paths: set[str] = field(default_factory=set)
 
 
 def _expand_exports_wildcard(
@@ -720,6 +724,88 @@ def _expand_exports_wildcard(
     return matches
 
 
+# Build output a package.json may point at, and the source extensions tsc
+# compiles to it. Only the unambiguous ``X.js`` ← ``X.ts`` shape is mapped.
+_BUILD_OUTPUT_JS = re.compile(r"^(?:dist|build|lib|out)/(.+)\.[mc]?js$")
+_BUILD_SOURCE_EXTENSIONS: tuple[str, ...] = (".ts", ".tsx", ".mts", ".js")
+
+
+def _is_checked_in(repo_path: Path | None, rel: str) -> bool:
+    """True when *rel* exists and is not gitignored: part of the checkout, not a local build.
+
+    Asks git so nested ``.gitignore`` files count; outside a git work tree an
+    existing file counts as checked in.
+    """
+    if repo_path is None or not (repo_path / rel).is_file():
+        return False
+    try:
+        verdict = subprocess.run(
+            ["git", "-C", str(repo_path), "check-ignore", "-q", "--", rel],
+            capture_output=True,
+            timeout=10,
+        )
+        ignored = verdict.returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        ignored = False
+    return not ignored
+
+
+def probe_manifest_target(
+    pkg_dir: str, target: str, path_set: set[str], repo_path: Path | None
+) -> str | None:
+    """The indexed file a ``package.json`` target names, reading built output as its source.
+
+    ``dist|build|lib|out/X.(m|c)js`` maps to ``src/X.(ts|tsx|mts|js)``, but only
+    when the built file is not in the checkout: a committed build is the entry
+    itself, and remapping it would name a file the package does not run. A
+    gitignored local build does not count as checked in.
+    Exact hits only, so an ambiguous source never stands in for the build.
+    """
+    rel = target.removeprefix("./")
+    hit = _probe_path(f"{pkg_dir}/{rel}", path_set)
+    if hit is not None:
+        return hit
+    built = _BUILD_OUTPUT_JS.match(rel)
+    if built is None or _is_checked_in(repo_path, _normalize_repo_rel(f"{pkg_dir}/{rel}")):
+        return None
+    base = _normalize_repo_rel(f"{pkg_dir}/src/{built.group(1)}")
+    return next((base + ext for ext in _BUILD_SOURCE_EXTENSIONS if base + ext in path_set), None)
+
+
+def manifest_entry_paths(
+    pkg_dir: str, pkg_data: dict, path_set: set[str], repo_path: Path | None
+) -> set[str]:
+    """Files one ``package.json`` declares as where it starts.
+
+    Every ``bin`` target (string or map), ``main`` and ``module``, and the
+    first ``exports["."]`` target that resolves. Declaration files are skipped.
+    """
+    targets: list[str] = []
+    bin_ = pkg_data.get("bin")
+    if isinstance(bin_, str):
+        targets.append(bin_)
+    elif isinstance(bin_, dict):
+        targets.extend(t for t in bin_.values() if isinstance(t, str))
+    targets.extend(t for t in (pkg_data.get("main"), pkg_data.get("module")) if isinstance(t, str))
+    found = {
+        hit
+        for t in targets
+        if (hit := probe_manifest_target(pkg_dir, t, path_set, repo_path)) is not None
+    }
+    exports = pkg_data.get("exports")
+    # A conditions-only object (``{"import": ..., "require": ...}``) is ``"."``.
+    if isinstance(exports, dict) and any(str(k).startswith(".") for k in exports):
+        exports = exports.get(".")
+    for target in _ordered_export_targets(exports) if exports is not None else ():
+        if target.endswith(_DECLARATION_SUFFIXES):
+            continue
+        hit = probe_manifest_target(pkg_dir, target, path_set, repo_path)
+        if hit is not None:
+            found.add(hit)
+            break
+    return found
+
+
 def build_ts_workspace_index(ctx: ResolverContext) -> TsWorkspaceIndex:
     """Build the workspace index for *ctx*.
 
@@ -749,7 +835,18 @@ def build_ts_workspace_index(ctx: ResolverContext) -> TsWorkspaceIndex:
             resolved = _probe_path(f"{dir_posix}/{main.lstrip('./')}", path_set)
             if resolved is not None:
                 entries.add(resolved)
-    return TsWorkspaceIndex(packages=packages, exports_entry_paths=entries)
+    declared: set[str] = set()
+    for pkg_file in _get_repo_scan(ctx).package_jsons:
+        try:
+            pkg_dir = pkg_file.parent.relative_to(ctx.repo_path).as_posix()
+            data = json.loads(pkg_file.read_text(encoding="utf-8", errors="ignore"))
+        except (ValueError, OSError, json.JSONDecodeError):
+            continue
+        if isinstance(data, dict):
+            declared |= manifest_entry_paths(pkg_dir, data, path_set, ctx.repo_path)
+    return TsWorkspaceIndex(
+        packages=packages, exports_entry_paths=entries, manifest_entry_paths=declared
+    )
 
 
 def get_or_build_ts_index(ctx: ResolverContext) -> TsWorkspaceIndex:

@@ -44,7 +44,6 @@ class TestParityGoldens:
                 "cli",
                 "__main__",
                 "bootstrap",
-                "entry",
             }
         ) == _ENTRY_FILENAME_STEMS
 
