@@ -493,12 +493,37 @@ def _match_identity(
     return def_node, name_nodes, name, export_type, start_line
 
 
+# ``@overload`` stubs are signatures for the type checker; the undecorated def
+# that follows under the same id is the one that runs.
+_PY_OVERLOAD_DECORATORS = frozenset({"overload", "typing.overload", "typing_extensions.overload"})
+
+
+def _is_python_overload(def_node: Node, src: str) -> bool:
+    parent = def_node.parent
+    if parent is None or parent.type != "decorated_definition":
+        return False
+    for decorator in parent.children:
+        if decorator.type != "decorator":
+            continue
+        # The expression, not the node text: a trailing comment sits inside it.
+        expr = next((c for c in decorator.named_children if c.type != "comment"), None)
+        if expr is not None and _node_text(expr, src) in _PY_OVERLOAD_DECORATORS:
+            return True
+    return False
+
+
 def _is_declaration(
-    def_node: Node, config: LanguageConfig, language: str, export_type: _CppExportType | None
+    def_node: Node,
+    config: LanguageConfig,
+    language: str,
+    export_type: _CppExportType | None,
+    src: str,
 ) -> bool:
     node_type = def_node.type
     if node_type in config.declaration_node_types:
         return True
+    if language == "python":
+        return _is_python_overload(def_node, src)
     if export_type is not None:
         return export_type.is_forward_declaration
     return _is_bodiless_cpp_type(language, node_type, def_node)
@@ -1451,7 +1476,7 @@ class ASTParser:
             language=language,
             parent_name=parent_name,
             is_exported_symbol=is_exported_symbol,
-            is_declaration=_is_declaration(def_node, config, language, export_type),
+            is_declaration=_is_declaration(def_node, config, language, export_type, src),
         )
         return symbol, def_node
 
