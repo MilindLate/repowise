@@ -126,6 +126,87 @@ jobs:
         run: uv run repowise doc-drift --check --baseline .github/doc-drift-baseline.json --format github
 
   # ---------------------------------------------------------------------------
+  # Precision, fast set — the matrix.toml repos with ci = "fast", indexed and
+  # graded against the mechanical oracles (imports, entry points, identity),
+  # diffed against the committed precision_baselines/. No LLM calls: indexing
+  # is --index-only. Fails on a >2pp regression or a new floor failure, and
+  # posts the compare table on the PR (one comment, updated in place).
+  # node + typescript for the TS import oracle, go for cobra's `go list`.
+  # ---------------------------------------------------------------------------
+  precision-fast:
+    name: Precision (fast set)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --all-packages
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # Just the compiler, at the version package-lock.json pins, instead of
+      # `npm ci` for the whole monorepo.
+      - name: Install typescript for the TS oracle
+        run: |
+          npm install --no-audit --no-fund --prefix "$RUNNER_TEMP/oracle-ts" typescript@5.9.3
+          echo "REPOWISE_ORACLE_TS=$RUNNER_TEMP/oracle-ts/node_modules/typescript" >> "$GITHUB_ENV"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+          cache: false
+
+      - name: Grade the fast set against the baselines
+        run: |
+          set +e
+          uv run python scripts/kg_validate/run.py --precision --ci fast \
+            --compare scripts/kg_validate/precision_baselines/ 2>&1 | tee precision.log
+          code=${PIPESTATUS[0]}
+          {
+            echo "<!-- precision-fast -->"
+            echo "### Precision, fast set vs committed baselines"
+            echo
+            sed -n '/^| repo | family/,$p' precision.log
+          } > precision-comment.md
+          cat precision-comment.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$code"
+
+      # Fork PRs get a read-only token; the table is still in the job summary.
+      - name: Post the compare table on the PR
+        if: always() && github.event_name == 'pull_request' && hashFiles('precision-comment.md') != ''
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = require("fs").readFileSync("precision-comment.md", "utf8");
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number,
+            });
+            const mine = comments.find((c) => c.body.startsWith("<!-- precision-fast -->"));
+            if (mine) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: mine.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+
+  # ---------------------------------------------------------------------------
   # Integration tests (run on push to main only, slower)
   # ---------------------------------------------------------------------------
   test-integration:

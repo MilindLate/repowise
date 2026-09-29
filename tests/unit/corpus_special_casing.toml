@@ -1,0 +1,47 @@
+# Config for test_no_corpus_special_casing.py (precision-plan rule R2).
+#
+# The token list is scripts/kg_validate/matrix.toml (every repo name, and the
+# owner/repo of every URL source) plus `extra` below. The hosted backend
+# vendors a copy of this list in its own tests/unit/corpus_special_casing.toml:
+# when a repo is added to the matrix, add it there too.
+
+# Tokens that name a corpus repo or a path inside one but are not matrix names.
+extra = [
+    "composio",           # the demo repo; also catches composio_<provider> packages
+    "ts/packages/",       # composio's TypeScript workspace root
+    "python/providers/",  # composio's Python provider packages root
+    "petclinic",
+    "cal.com",
+]
+
+# Matrix names that are ordinary words, or the name of a library, framework or
+# tool that source code names legitimately (framework detection, tech-stack
+# labels, logger names, CLI flags). For these, only the owner-qualified form
+# (`pallets/click`) and a middle path segment (`src/click/core.py`) count; a
+# bare `click` or `args` would flag hundreds of innocent literals.
+# Every other matrix name is distinctive and matches anywhere as a whole word,
+# so a newly added repo is checked strictly until someone lists it here.
+ordinary = [
+    # plain English words / common identifiers
+    "args", "task", "glue", "plug", "slim", "fmt", "fd", "rich", "requests",
+    "click", "commerce", "polly", "chi", "jason",
+    # libraries, frameworks and tools named by detection or labelling code
+    "django", "flask", "express", "httpx", "pydantic", "sinatra", "gson", "okio", "scopt",
+    "typst", "alamofire", "libuv", "compojure", "aeson", "argu", "cowlib",
+    "jsony", "dfmt", "kemal", "sexplib", "afnetworking", "cobra", "mlflow",
+    "bubbletea",
+]
+
+# Legitimate hits: a literal that names a corpus token for a reason that holds
+# on every repo. Matched on (path, token), so the entry survives line moves.
+# Only shrink this; each entry needs a reason a reviewer can check.
+
+[[allow]]
+path = "packages/core/src/repowise/core/ingestion/framework_edges/trpc.py"
+token = "trpc"
+reason = "tRPC framework detection keyed on the `@trpc/` npm scope and the `trpc` stack label; fires for every tRPC user, not one repo."
+
+[[allow]]
+path = "packages/core/src/repowise/core/ingestion/framework_edges/go.py"
+token = "go-chi/chi"
+reason = "Go module path of the chi router (`github.com/go-chi/chi`), listed beside gin and echo for router detection in any Go repo."

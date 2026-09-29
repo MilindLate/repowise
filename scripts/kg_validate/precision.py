@@ -34,13 +34,20 @@ LOWER_IS_BETTER = frozenset({"person_count_error"})
 HELDOUT = "heldout"  # pseudo-repo name for the held-out aggregate
 
 
-def select_repos(matrix: dict, split: str, repos: list[str] | None = None) -> list[str]:
-    """Matrix entries in ``split`` (``all`` = both), optionally narrowed to ``repos``."""
-    names = [n for n, spec in matrix.items() if split == "all" or spec.get("split") == split]
+def select_repos(
+    matrix: dict, split: str, repos: list[str] | None = None, ci: str | None = None
+) -> list[str]:
+    """Matrix entries in ``split`` (``all`` = both), optionally narrowed to ``repos``
+    and to one ``ci`` tier (``fast`` = the per-PR job's set)."""
+    names = [
+        n
+        for n, spec in matrix.items()
+        if (split == "all" or spec.get("split") == split) and (ci is None or spec.get("ci") == ci)
+    ]
     if repos:
         missing = [r for r in repos if r not in names]
         if missing:
-            raise ValueError(f"not in the {split} split of matrix.toml: {missing}")
+            raise ValueError(f"not in the {split} split (ci={ci}) of matrix.toml: {missing}")
         names = [n for n in names if n in repos]
     return names
 
