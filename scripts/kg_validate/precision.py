@@ -8,7 +8,8 @@ A per-repo *result* is the compact JSON committed as
      "families": {
        "imports": {"python": {"tp": 1, "fp": 0, "fn": 2, "dst_not_indexed": 0}},
        "entry_points": {"p_at_5": 0.8, "recall": 0.5, ...},
-       "identity": {"b3_precision": 1.0, "b3_recall": 0.9, "person_count_error": 0.1, ...}}}
+       "identity": {"b3_precision": 1.0, "b3_recall": 0.9, "person_count_error": 0.1, ...},
+       "packages": {"precision": 0.97, "recall": 1.0, "declared": 85, ...}}}
 
 Imports keep raw per-language counts rather than rates, so pooled floors
 (``score.evaluate``) can be recomputed for any repo subset from baselines
@@ -21,7 +22,7 @@ from dataclasses import dataclass
 
 import score
 
-FAMILIES = ("imports", "entry_points", "identity")
+FAMILIES = ("imports", "entry_points", "identity", "packages")
 SPLITS = ("dev", "heldout", "all")
 # A rate that moves the wrong way by more than this is a regression (R2).
 REGRESSION_PP = 0.02
@@ -29,6 +30,7 @@ REGRESSION_PP = 0.02
 METRICS = {
     "entry_points": ("p_at_5", "recall"),
     "identity": ("b3_precision", "b3_recall", "person_count_error"),
+    "packages": ("precision", "recall"),
 }
 LOWER_IS_BETTER = frozenset({"person_count_error"})
 HELDOUT = "heldout"  # pseudo-repo name for the held-out aggregate

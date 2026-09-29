@@ -10,7 +10,8 @@ Usage (from the repo root):
     python scripts/kg_validate/run.py --json           # machine-readable
     python scripts/kg_validate/run.py --modules-report /tmp/modules.md
 
-    # precision against the mechanical oracles (imports, entry points, identity)
+    # precision against the mechanical oracles (imports, entry points, identity,
+    # packages)
     python scripts/kg_validate/run.py --precision --split dev \
         --compare scripts/kg_validate/precision_baselines/
     python scripts/kg_validate/run.py --precision --repos click,cobra --families imports
@@ -193,6 +194,7 @@ def measure_repo(name: str, spec: dict, families: list[str], *, skip_index: bool
     from oracles import entry_points as ep_oracle
     from oracles import identity as id_oracle
     from oracles import imports as imp_oracle
+    from oracles import packages as pkg_oracle
 
     dest = ensure_clone(name, spec, depth=PRECISION_DEPTH)
     if not skip_index:
@@ -221,6 +223,10 @@ def measure_repo(name: str, spec: dict, families: list[str], *, skip_index: bool
         truth = id_oracle.truth_clusters(dest, id_oracle.load_alias_sets(name))
         predicted_ids = predicted_identities(dest / ".repowise" / "wiki.db")
         fams["identity"] = id_oracle.score(predicted_ids, truth)
+    if "packages" in families:
+        kg = json.loads(kg_path.read_text(encoding="utf-8"))
+        predicted = [p["path"] for p in (kg.get("project") or {}).get("packages") or []]
+        fams["packages"] = pkg_oracle.score(predicted, pkg_oracle.declared_members(dest))
     return result
 
 
