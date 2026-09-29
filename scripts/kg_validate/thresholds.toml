@@ -23,8 +23,9 @@
 # 2pp tolerance, the same margin run.py --compare allows per repo. Per-repo
 # recall and counts are held by that --compare rule (no repo may lose more
 # than 2pp against its own baseline), not by a shared absolute floor. Floors
-# for families with no oracle in run.py yet (dead_code, calls, health,
-# get_answer) are still provisional: set them the same way when they land.
+# for families with no oracle in run.py yet (dead_code, health, get_answer),
+# and for calls until it has a full dev-split baseline, are still
+# provisional: set them the same way when they land.
 
 [calibration]
 ece_max = 0.05
@@ -62,11 +63,16 @@ recall = 0.967       # dev baseline 0.987 - 0.02
 precision = 0.99
 recall = 0.974       # dev baseline 0.994 - 0.02
 
+# calls: oracles/calls.py samples claims (family calls, tier high/low around
+# 0.9) and call sites (calls.callers, recall at any confidence) per repo, so
+# min_findings counts sampled claims at >= 0.9, not every edge.
 [family.calls]
 min_confidence = 0.9
 precision = 0.95
-recall = 0.50
 min_findings = 500
+
+[family."calls.callers"]
+recall = 0.50
 
 [family.entry_points]
 metrics.p_at_5 = { min = 0.95 }

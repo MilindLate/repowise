@@ -1,5 +1,49 @@
 {
  "families": {
+  "calls": {
+   "claims": {
+    "0.5": {
+     "fp": 74,
+     "tp": 8,
+     "unknown": 7
+    },
+    "0.88": {
+     "fp": 0,
+     "tp": 11,
+     "unknown": 0
+    },
+    "0.9": {
+     "fp": 0,
+     "tp": 134,
+     "unknown": 3
+    },
+    "0.95": {
+     "fp": 0,
+     "tp": 63,
+     "unknown": 0
+    }
+   },
+   "no_site": 0,
+   "population": {
+    "claims": 4494,
+    "claims_high": 3478,
+    "frame": 17681
+   },
+   "sample": 200,
+   "seed": 0,
+   "sites": {
+    "external": 31,
+    "fn": 6,
+    "hit": {
+     "0.5": 2,
+     "0.88": 1,
+     "0.9": 29,
+     "0.95": 11
+    },
+    "not_indexed": 53,
+    "unknown": 67
+   }
+  },
   "entry_points": {
    "gold": false,
    "manifest_count": 28,

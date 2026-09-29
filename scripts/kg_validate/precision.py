@@ -8,9 +8,11 @@ A per-repo *result* is the compact JSON committed as
      "families": {
        "imports": {"python": {"tp": 1, "fp": 0, "fn": 2, "dst_not_indexed": 0}},
        "entry_points": {"p_at_5": 0.8, "recall": 0.5, ...},
-       "identity": {"b3_precision": 1.0, "b3_recall": 0.9, "person_count_error": 0.1, ...}}}
+       "identity": {"b3_precision": 1.0, "b3_recall": 0.9, "person_count_error": 0.1, ...},
+       "calls": {"claims": {"0.95": {"tp": 3, "fp": 0, "unknown": 1}},
+                 "sites": {"hit": {"0.9": 5}, "fn": 2, "unknown": 1, ...}, ...}}}
 
-Imports keep raw per-language counts rather than rates, so pooled floors
+Imports and calls keep raw counts rather than rates, so pooled floors
 (``score.evaluate``) can be recomputed for any repo subset from baselines
 alone, and a baseline's floor failures can be told apart from new ones.
 """
@@ -20,8 +22,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import score
+from oracles.calls import HIGH as CALLS_HIGH
 
-FAMILIES = ("imports", "entry_points", "identity")
+FAMILIES = ("imports", "entry_points", "identity", "calls")
+# calls needs jedi (requirements-oracles.txt) and a LanguageService pass per
+# repo, so it runs only when --families names it.
+DEFAULT_FAMILIES = ("imports", "entry_points", "identity")
 SPLITS = ("dev", "heldout", "all")
 # A rate that moves the wrong way by more than this is a regression (R2).
 REGRESSION_PP = 0.02
@@ -30,7 +36,7 @@ METRICS = {
     "entry_points": ("p_at_5", "recall"),
     "identity": ("b3_precision", "b3_recall", "person_count_error"),
 }
-LOWER_IS_BETTER = frozenset({"person_count_error"})
+LOWER_IS_BETTER = frozenset({"person_count_error", "unknown_rate"})
 HELDOUT = "heldout"  # pseudo-repo name for the held-out aggregate
 
 
@@ -66,6 +72,8 @@ def family_metrics(result: dict) -> dict[str, dict[str, float | None]]:
     """``{family key: {metric: value}}`` for the compare table.
 
     Imports report pooled ``imports`` plus one ``imports.<lang>`` per language.
+    Calls report precision at confidence >= ``CALLS_HIGH``, caller recall at
+    any confidence, and the share of sampled items the oracle could not judge.
     """
     fams = result.get("families", {})
     out: dict[str, dict[str, float | None]] = {}
@@ -84,19 +92,39 @@ def family_metrics(result: dict) -> dict[str, dict[str, float | None]]:
     for fam, names in METRICS.items():
         if fam in fams:
             out[fam] = {m: fams[fam].get(m) for m in names}
+    calls = fams.get("calls", {})
+    claims, sites = calls.get("claims", {}), calls.get("sites", {})
+    if claims or sites:
+        high = [c for conf, c in claims.items() if float(conf) >= CALLS_HIGH]
+        tp, fp = sum(c["tp"] for c in high), sum(c["fp"] for c in high)
+        hits = sum(sites.get("hit", {}).values())
+        judged = sum(sum(c.values()) for c in claims.values()) + hits
+        judged += sum(v for k, v in sites.items() if k != "hit")
+        unknown = sum(c["unknown"] for c in claims.values()) + sites.get("unknown", 0)
+        out["calls"] = {
+            "precision": _rate(tp, tp + fp),
+            "recall": _rate(hits, hits + sites.get("fn", 0)),
+            "unknown_rate": _rate(unknown, judged),
+        }
     return out
 
 
-def score_inputs(results: list[dict]) -> tuple[list[dict], list[dict], list[dict]]:
-    """(findings, truth, metrics) rows for ``score.judge`` from results.
+def score_inputs(results: list[dict]) -> tuple[list[dict], list[dict], list[dict], list[dict]]:
+    """(findings, truth, labels, metrics) rows for ``score.judge`` from results.
 
     Import counts expand to synthetic keyed rows: ``tp`` findings in truth,
     ``fp`` findings outside it, ``fn`` truth never found. Each language is
     emitted under family ``imports`` (tier = language) and again as family
     ``imports.<lang>``, so per-language floors get their own recall.
+
+    Calls come from two samples, so they get two families: ``calls`` holds
+    the sampled claims, labelled tp/fp (``unknown`` stays unlabelled) with
+    their confidence and tier ``high``/``low`` around ``CALLS_HIGH``;
+    ``calls.callers`` holds the recall sample as truth, hits as findings.
     """
     findings: list[dict] = []
     truth: list[dict] = []
+    labels: list[dict] = []
     metrics: list[dict] = []
     for res in results:
         repo = res["repo"]
@@ -112,17 +140,43 @@ def score_inputs(results: list[dict]) -> tuple[list[dict], list[dict], list[dict
                             )
                         if kind != "fp":
                             truth.append({"repo": repo, "family": family, "key": key})
+        calls = fams.get("calls", {})
+        for conf, c in calls.get("claims", {}).items():
+            tier = "high" if float(conf) >= CALLS_HIGH else "low"
+            for kind in ("tp", "fp", "unknown"):
+                for i in range(c[kind]):
+                    key = f"{conf}:{kind}:{i}"
+                    findings.append(
+                        {
+                            "repo": repo,
+                            "family": "calls",
+                            "key": key,
+                            "tier": tier,
+                            "confidence": float(conf),
+                        }
+                    )
+                    if kind != "unknown":
+                        labels.append(
+                            {"repo": repo, "family": "calls", "finding_key": key, "label": kind}
+                        )
+        sites = calls.get("sites", {})
+        for kind, n in (("hit", sum(sites.get("hit", {}).values())), ("fn", sites.get("fn", 0))):
+            for i in range(n):
+                row = {"repo": repo, "family": "calls.callers", "key": f"{kind}:{i}"}
+                truth.append(row)
+                if kind == "hit":
+                    findings.append(row)
         for fam, names in METRICS.items():
             for m in names:
                 value = fams.get(fam, {}).get(m)
                 if value is not None:
                     metrics.append({"repo": repo, "family": fam, "metric": m, "value": value})
-    return findings, truth, metrics
+    return findings, truth, labels, metrics
 
 
 def evaluate_results(results: list[dict], thresholds: dict) -> list[score.Check]:
-    findings, truth, metrics = score_inputs(results)
-    return score.evaluate(score.judge(findings, truth, [], metrics), thresholds)
+    findings, truth, labels, metrics = score_inputs(results)
+    return score.evaluate(score.judge(findings, truth, labels, metrics), thresholds)
 
 
 def check_key(c: score.Check) -> tuple[str, str, str]:
@@ -135,8 +189,17 @@ def new_failures(now: list[score.Check], before: list[score.Check]) -> list[scor
     return [c for c in now if c.status == "fail" and check_key(c) not in known]
 
 
+def _add_counts(acc: dict, counts: dict) -> None:
+    """Sum nested ``{key: int | {key: ...}}`` count dicts into ``acc``."""
+    for k, v in counts.items():
+        if isinstance(v, dict):
+            _add_counts(acc.setdefault(k, {}), v)
+        else:
+            acc[k] = acc.get(k, 0) + v
+
+
 def aggregate(results: list[dict], name: str = HELDOUT) -> dict:
-    """One pseudo-repo result: import counts summed, oracle metrics averaged.
+    """One pseudo-repo result: import and call counts summed, oracle metrics averaged.
 
     Used for the held-out split, which must never be reported repo by repo.
     """
@@ -146,6 +209,10 @@ def aggregate(results: list[dict], name: str = HELDOUT) -> dict:
             acc = fams.setdefault("imports", {}).setdefault(lang, dict.fromkeys(c, 0))
             for k, v in c.items():
                 acc[k] += v
+        calls = res.get("families", {}).get("calls")
+        if calls:
+            counts = {k: calls[k] for k in ("claims", "sites", "no_site") if k in calls}
+            _add_counts(fams.setdefault("calls", {}), counts)
     for fam, names in METRICS.items():
         vals = {m: [] for m in names}
         for res in results:
