@@ -41,3 +41,25 @@ One verdict per finding, keyed by the finding's `key`:
 `label` is `tp`/`fp` (also `true`/`false`, `correct`/`wrong`, `yes`/`no`);
 `unsure` is ignored. `repo` is implied by the directory when scored with
 `--repo <repo>`.
+
+## Suggested labels (`<family>.suggested.jsonl`, not read by any scorer)
+
+Machine- or agent-proposed verdicts waiting for a person. Same line shape as
+finding labels plus `"status": "suggested"`. A reviewer confirms by copying a
+line into `<family>.jsonl` (dropping `status`, adding `"reviewer"`); nothing
+scores a `.suggested` file, so it can never pass for ground truth.
+
+### `decision_reverts.suggested.jsonl` (card D15)
+
+One line per commit that revert-based supersession treats as reverted at
+HEAD, i.e. a decision resting only on it would flip to `superseded`:
+
+```json
+{"family": "decision_reverts", "finding_key": "<target sha>", "revert": "<revert sha>", "rule": "body|subject|pr",
+ "target_subject": "...", "revert_subject": "...", "head": "<sha scanned>",
+ "label": "tp", "status": "suggested", "note": "revert diff is the exact inverse of the target (patch-id match)"}
+```
+
+`tp` means the matched commit really undoes the target and the change was
+not re-landed later; `fp` means either is wrong. `head` is the SHA scanned
+(the pinned SHA for matrix repos, the clone's HEAD otherwise).
