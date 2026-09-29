@@ -1,0 +1,283 @@
+{
+ "sha": "3b171578ca44dfd75ca3c5cbddc7b44c600a7b49",
+ "status": "claude-draft: drafted by an agent from the pinned source and git history; not human-confirmed",
+ "reviewer": null,
+ "note": "get_why design questions. expected: the comment span (path + lines) or commit(s) that hold the answer; [] = no recorded answer exists (a served rationale is a false serve).",
+ "questions": [
+  {
+   "id": "chi-01",
+   "question": "Why are the route parameters on the routing context unexported?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "context.go",
+     "lines": [
+      62,
+      63
+     ]
+    }
+   ]
+  },
+  {
+   "id": "chi-02",
+   "question": "Why does ClientIPFromXFF fail closed on an unparseable entry?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "middleware/client_ip.go",
+     "lines": [
+      56,
+      67
+     ]
+    }
+   ]
+  },
+  {
+   "id": "chi-03",
+   "question": "Why are v4-mapped IPv6 addresses folded to plain v4 when parsing header addresses?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "middleware/client_ip.go",
+     "lines": [
+      248,
+      256
+     ]
+    }
+   ]
+  },
+  {
+   "id": "chi-04",
+   "question": "Why does ClientIPFromHeader use the last value of a repeated header?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "middleware/client_ip_test.go",
+     "lines": [
+      490,
+      501
+     ]
+    },
+    {
+     "path": "middleware/client_ip.go",
+     "lines": [
+      18,
+      29
+     ]
+    }
+   ]
+  },
+  {
+   "id": "chi-05",
+   "question": "Why does the Compress middleware need a Content-Type on the response?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "middleware/compress.go",
+     "lines": [
+      29,
+      39
+     ]
+    }
+   ]
+  },
+  {
+   "id": "chi-06",
+   "question": "Why should Logger go before Recoverer in the middleware stack?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "middleware/logger.go",
+     "lines": [
+      23,
+      34
+     ]
+    }
+   ]
+  },
+  {
+   "id": "chi-07",
+   "question": "Why is DefaultLogger a package-level variable?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "middleware/logger.go",
+     "lines": [
+      17,
+      19
+     ]
+    }
+   ]
+  },
+  {
+   "id": "chi-08",
+   "question": "Why does the strip middleware turn backslashes into forward slashes?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "middleware/strip.go",
+     "lines": [
+      52,
+      53
+     ]
+    }
+   ]
+  },
+  {
+   "id": "chi-09",
+   "question": "Why must the strip slashes middleware be mounted at the top of the router?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "middleware/strip_test.go",
+     "lines": [
+      16,
+      17
+     ]
+    },
+    {
+     "path": "middleware/strip_test.go",
+     "lines": [
+      105,
+      106
+     ]
+    }
+   ]
+  },
+  {
+   "id": "chi-10",
+   "question": "Why put SupressNotFound at the top of the middleware stack?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "middleware/supress_notfound.go",
+     "lines": [
+      9,
+      14
+     ]
+    }
+   ]
+  },
+  {
+   "id": "chi-11",
+   "question": "Why does ReadFrom not add n to the byte count when a tee writer is set?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "middleware/wrap_writer.go",
+     "lines": [
+      211,
+      213
+     ]
+    },
+    {
+     "commit": "4ef87ea"
+    }
+   ]
+  },
+  {
+   "id": "chi-12",
+   "question": "Why do handlers have to select on ctx.Done() under the Timeout middleware?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "middleware/timeout.go",
+     "lines": [
+      9,
+      20
+     ]
+    }
+   ]
+  },
+  {
+   "id": "chi-13",
+   "question": "Why do the wrap writer tests build the recorder struct instead of calling NewRecorder?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "middleware/wrap_writer_test.go",
+     "lines": [
+      30,
+      30
+     ]
+    },
+    {
+     "path": "middleware/wrap_writer_test.go",
+     "lines": [
+      51,
+      51
+     ]
+    },
+    {
+     "path": "middleware/wrap_writer_test.go",
+     "lines": [
+      72,
+      72
+     ]
+    }
+   ]
+  },
+  {
+   "id": "chi-14",
+   "question": "Why is RequestIDHeader exported?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "middleware/request_id.go",
+     "lines": [
+      23,
+      24
+     ]
+    }
+   ]
+  },
+  {
+   "id": "chi-15",
+   "question": "Why did the throttle middleware stop creating a timer for every request?",
+   "answer_source": "commit",
+   "expected": [
+    {
+     "commit": "cf537d4"
+    }
+   ]
+  },
+  {
+   "id": "chi-16",
+   "question": "Why was closing the created writer in the compressor middleware reverted?",
+   "answer_source": "commit",
+   "expected": [
+    {
+     "commit": "7957c0d"
+    }
+   ]
+  },
+  {
+   "id": "chi-17",
+   "question": "Why was the minimum Go version bumped to 1.23?",
+   "answer_source": "commit",
+   "expected": [
+    {
+     "commit": "a54874f"
+    }
+   ]
+  },
+  {
+   "id": "chi-18",
+   "question": "Why does chi keep sessions in a database?",
+   "answer_source": "none",
+   "expected": []
+  },
+  {
+   "id": "chi-19",
+   "question": "Why was GraphQL support added to the router?",
+   "answer_source": "none",
+   "expected": []
+  },
+  {
+   "id": "chi-20",
+   "question": "Why does chi wrap gorilla/mux for route matching?",
+   "answer_source": "none",
+   "expected": []
+  }
+ ]
+}

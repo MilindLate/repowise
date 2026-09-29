@@ -1,0 +1,234 @@
+{
+ "sha": "dae209ae6559c29cfca2a1f4414c51d89ea643d5",
+ "status": "claude-draft: drafted by an agent from the pinned source and git history; not human-confirmed",
+ "reviewer": null,
+ "note": "get_why design questions. expected: the comment span (path + lines) or commit(s) that hold the answer; [] = no recorded answer exists (a served rationale is a false serve).",
+ "questions": [
+  {
+   "id": "express-01",
+   "question": "Why does the auth example regenerate the session when a user signs in?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "examples/auth/index.js",
+     "lines": [
+      109,
+      110
+     ]
+    }
+   ]
+  },
+  {
+   "id": "express-02",
+   "question": "Why do error handling middleware take four arguments?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "examples/error/index.js",
+     "lines": [
+      14,
+      18
+     ]
+    }
+   ]
+  },
+  {
+   "id": "express-03",
+   "question": "Why does the search example serve the client javascript with sendFile instead of the static middleware?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "examples/search/index.js",
+     "lines": [
+      62,
+      67
+     ]
+    }
+   ]
+  },
+  {
+   "id": "express-04",
+   "question": "Why does the ejs example register ejs for .html views?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "examples/ejs/index.js",
+     "lines": [
+      12,
+      21
+     ]
+    }
+   ]
+  },
+  {
+   "id": "express-05",
+   "question": "Why does the error example call next() inside process.nextTick?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "examples/error/index.js",
+     "lines": [
+      35,
+      38
+     ]
+    }
+   ]
+  },
+  {
+   "id": "express-06",
+   "question": "Why does res.download override a Content-Disposition header passed in options?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "lib/response.js",
+     "lines": [
+      415,
+      426
+     ]
+    }
+   ]
+  },
+  {
+   "id": "express-07",
+   "question": "Why does the res.location test encode the uri itself?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "test/res.location.js",
+     "lines": [
+      143,
+      145
+     ]
+    }
+   ]
+  },
+  {
+   "id": "express-08",
+   "question": "Why don't the res.status tests use status 100?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "test/res.status.js",
+     "lines": [
+      21,
+      21
+     ]
+    }
+   ]
+  },
+  {
+   "id": "express-09",
+   "question": "Why does the view-locals example delegate errors to next(err)?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "examples/view-locals/index.js",
+     "lines": [
+      21,
+      24
+     ]
+    }
+   ]
+  },
+  {
+   "id": "express-10",
+   "question": "Why use req.socket instead of req.connection?",
+   "answer_source": "commit",
+   "expected": [
+    {
+     "commit": "89f198c"
+    }
+   ]
+  },
+  {
+   "id": "express-11",
+   "question": "Why was the utils-merge dependency removed?",
+   "answer_source": "commit",
+   "expected": [
+    {
+     "commit": "246f6f5"
+    }
+   ]
+  },
+  {
+   "id": "express-12",
+   "question": "Why does express use node:buffer instead of safe-buffer?",
+   "answer_source": "commit",
+   "expected": [
+    {
+     "commit": "c70197a"
+    }
+   ]
+  },
+  {
+   "id": "express-13",
+   "question": "Why was array-flatten replaced?",
+   "answer_source": "commit",
+   "expected": [
+    {
+     "commit": "d106bf5"
+    },
+    {
+     "commit": "3d05e85"
+    }
+   ]
+  },
+  {
+   "id": "express-14",
+   "question": "Why are string arguments to res.status deprecated?",
+   "answer_source": "commit",
+   "expected": [
+    {
+     "commit": "4847d0e"
+    }
+   ]
+  },
+  {
+   "id": "express-15",
+   "question": "Why does res.clearCookie ignore maxAge and expires?",
+   "answer_source": "commit",
+   "expected": [
+    {
+     "commit": "82fc12a"
+    },
+    {
+     "commit": "f42b160"
+    }
+   ]
+  },
+  {
+   "id": "express-16",
+   "question": "Why do undefined redirect arguments emit a deprecation warning?",
+   "answer_source": "commit",
+   "expected": [
+    {
+     "commit": "c5b8d55"
+    }
+   ]
+  },
+  {
+   "id": "express-17",
+   "question": "Why does express ship a template engine written in Rust?",
+   "answer_source": "none",
+   "expected": []
+  },
+  {
+   "id": "express-18",
+   "question": "Why does express route requests through GraphQL?",
+   "answer_source": "none",
+   "expected": []
+  },
+  {
+   "id": "express-19",
+   "question": "Why was WebSocket support built into the router?",
+   "answer_source": "none",
+   "expected": []
+  },
+  {
+   "id": "express-20",
+   "question": "Why does express cache responses in Redis?",
+   "answer_source": "none",
+   "expected": []
+  }
+ ]
+}

@@ -1,0 +1,276 @@
+{
+ "sha": "06b2a678741131fd577ce170e23e5ca0aeba0309",
+ "status": "claude-draft: drafted by an agent from the pinned source and git history; not human-confirmed",
+ "reviewer": null,
+ "note": "get_why design questions. expected: the comment span (path + lines) or commit(s) that hold the answer; [] = no recorded answer exists (a served rationale is a false serve).",
+ "questions": [
+  {
+   "id": "click-01",
+   "question": "Why does click default stream errors to replace instead of strict?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "src/click/_compat.py",
+     "lines": [
+      271,
+      272
+     ]
+    }
+   ]
+  },
+  {
+   "id": "click-02",
+   "question": "Why does the pager fall back to whitespace splitting when LESS has unbalanced quotes?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "src/click/_termui_impl.py",
+     "lines": [
+      532,
+      533
+     ]
+    }
+   ]
+  },
+  {
+   "id": "click-03",
+   "question": "Why does the editor create its temp file with delete=False on Windows?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "src/click/_termui_impl.py",
+     "lines": [
+      650,
+      652
+     ]
+    }
+   ]
+  },
+  {
+   "id": "click-04",
+   "question": "Why is the help option object cached on the command?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "src/click/core.py",
+     "lines": [
+      1236,
+      1239
+     ]
+    }
+   ]
+  },
+  {
+   "id": "click-05",
+   "question": "Why does the help option use a reserved storage name?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "src/click/core.py",
+     "lines": [
+      1244,
+      1246
+     ]
+    }
+   ]
+  },
+  {
+   "id": "click-06",
+   "question": "Why can an argument not share its name with another parameter?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "src/click/core.py",
+     "lines": [
+      1151,
+      1153
+     ]
+    }
+   ]
+  },
+  {
+   "id": "click-07",
+   "question": "Why does shell completion write bytes to stdout?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "src/click/shell_completion.py",
+     "lines": [
+      46,
+      46
+     ]
+    }
+   ]
+  },
+  {
+   "id": "click-08",
+   "question": "Why does echo_via_pager flush after every write?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "src/click/termui.py",
+     "lines": [
+      396,
+      398
+     ]
+    }
+   ]
+  },
+  {
+   "id": "click-09",
+   "question": "Why does CliRunner force unbuffered reads of the input?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "src/click/testing.py",
+     "lines": [
+      455,
+      456
+     ]
+    }
+   ]
+  },
+  {
+   "id": "click-10",
+   "question": "Why are the captured streams' fileno pointed at the original file descriptor during tests?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "src/click/testing.py",
+     "lines": [
+      667,
+      669
+     ]
+    }
+   ]
+  },
+  {
+   "id": "click-11",
+   "question": "Why does click open and close a lazy file right away when it is opened for reading?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "src/click/utils.py",
+     "lines": [
+      138,
+      140
+     ]
+    }
+   ]
+  },
+  {
+   "id": "click-12",
+   "question": "Why must the ProgressBar generator stay a simple generator?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "src/click/_termui_impl.py",
+     "lines": [
+      354,
+      360
+     ]
+    }
+   ]
+  },
+  {
+   "id": "click-13",
+   "question": "Why can convert_type not be called recursively for a sequence of iterables?",
+   "answer_source": "comment",
+   "expected": [
+    {
+     "path": "src/click/types.py",
+     "lines": [
+      1337,
+      1339
+     ]
+    }
+   ]
+  },
+  {
+   "id": "click-14",
+   "question": "Why was colorama removed?",
+   "answer_source": "commit",
+   "expected": [
+    {
+     "commit": "a44e9f0"
+    },
+    {
+     "commit": "13f075c"
+    },
+    {
+     "commit": "6a141c3"
+    },
+    {
+     "commit": "7454647"
+    }
+   ]
+  },
+  {
+   "id": "click-15",
+   "question": "Why was isolated_filesystem deprecated?",
+   "answer_source": "commit",
+   "expected": [
+    {
+     "commit": "cfa01ee"
+    },
+    {
+     "commit": "c2ed414"
+    },
+    {
+     "commit": "fbdd434"
+    }
+   ]
+  },
+  {
+   "id": "click-16",
+   "question": "Why does split_arg_string use extend instead of a loop?",
+   "answer_source": "commit",
+   "expected": [
+    {
+     "commit": "679a7a0"
+    },
+    {
+     "commit": "748a34d"
+    }
+   ]
+  },
+  {
+   "id": "click-17",
+   "question": "Why do confirm and prompt strip ANSI codes?",
+   "answer_source": "commit",
+   "expected": [
+    {
+     "commit": "fe3ad76"
+    },
+    {
+     "commit": "93ba007"
+    },
+    {
+     "path": "src/click/utils.py",
+     "lines": [
+      328,
+      329
+     ]
+    }
+   ]
+  },
+  {
+   "id": "click-18",
+   "question": "Why does click dispatch commands through asyncio?",
+   "answer_source": "none",
+   "expected": []
+  },
+  {
+   "id": "click-19",
+   "question": "Why does click keep its configuration in a SQLite database?",
+   "answer_source": "none",
+   "expected": []
+  },
+  {
+   "id": "click-20",
+   "question": "Why was the plugin marketplace removed from click?",
+   "answer_source": "none",
+   "expected": []
+  }
+ ]
+}
