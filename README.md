@@ -413,8 +413,8 @@ change, and the architecture rule the new dependency violates before it ships.
 | **Cross-repo blast radius** | If this provider changes, which downstream services are in structural reach, and which ones may drift through historical co-change? |
 | **Breaking-change guard** | Was an endpoint removed or a supported OpenAPI / proto / signature shape changed incompatibly, and which consumer files are linked to that contract? |
 | **Test impact** | Which tests in the consumer repos should run for this provider change, measured from coverage or inferred from the call graph, and which links could not be determined? |
-| **Architecture as code** | Does the live system graph violate declared dependency rules or contain cycles? `repowise workspace check` gates CI. |
-| **Architecture health** | How coupled is the estate? Track propagation cost, the cyclic core, service roles, and a deterministic 1–10 architecture score. |
+| **[Architecture as code](docs/scale/WORKSPACES.md#architecture-conformance)** | Does the live system graph violate declared service-to-service dependency rules or contain cycles? `repowise workspace check` gates CI, and the Conformance page draws it as a dependency-structure matrix. |
+| **[Architecture health](docs/scale/WORKSPACES.md#architecture-metrics)** | How coupled is the estate? Track propagation cost, the cyclic core, service roles, and a deterministic 1-10 architecture score with `repowise workspace metrics`. |
 | **Federated context** | One dashboard and one MCP server answer across every repository while preserving repo-level evidence. |
 
 The system map models **services**, not merely repository boxes, and never conflates a

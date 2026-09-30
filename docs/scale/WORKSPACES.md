@@ -473,7 +473,7 @@ Each impacted service carries its `distance` (hops from the change) and `score` 
 Use it three ways:
 
 - **REST**, `GET /api/workspace/blast-radius?target=<node-id-or-repo>&max_depth=3&include_behavioral=true`. `target` is a node id (`repo` or `repo::service/path`) or a repo alias (expands to all its services).
-- **MCP**, the `get_blast_radius` tool (workspace mode) gives an agent the impacted set before it touches a high-fan-out provider. The `get_risk` PR-mode directive also gains `will_break_consumers` and `missing_cross_repo_cochanges` so a diff in one repo flags its cross-repo fallout.
+- **MCP**, the opt-in `get_blast_radius` tool (workspace mode, `mcp.tools: ["+get_blast_radius"]`) gives an agent the impacted set before it touches a high-fan-out provider. The `get_risk` PR-mode directive also gains `will_break_consumers` and `missing_cross_repo_cochanges` so a diff in one repo flags its cross-repo fallout.
 - **System Map**, pick a service in the **Blast radius** control above the map; the reachable set ripples (highlighted, the rest dimmed, badges grading intensity), and a side panel lists the impacted services. Click any impacted service to walk the impact outward from there.
 
 ---
@@ -600,7 +600,7 @@ Independently of any rules, conformance detects **circular dependencies** among 
 
   It recomputes from the persisted system graph, so editing rules and re-running picks them up without a full re-index.
 - **REST**, `GET /api/workspace/conformance` returns the report from the most recent update (filterable by `repo`).
-- **MCP**, `get_conformance` exposes violations and cycles to an agent; the `get_risk` PR-mode directive gains `conformance_violations` and `dependency_cycles` blocks for the findings the diff's repo participates in.
+- **MCP**, `get_conformance` exposes violations and cycles to an agent. It is opt-in (`mcp.tools: ["+get_conformance"]`, see [MCP_TOOLS.md](../agent/MCP_TOOLS.md#get_conformance)). Without it, the `get_risk` PR-mode directive still gains `conformance_violations` and `dependency_cycles` blocks for the findings the diff's repo participates in.
 - **Conformance view**, the web UI's Conformance page renders a **dependency-structure matrix (DSM)**: services on both axes, each filled cell a dependency tinted by transport, with rule violations ringed red and cycle cells amber. Governance panels list the violations and cycles. Violations also badge the offending edges on the [Live System Map](#live-system-map) (toggle **Conformance**), reusing the same additive overlay as the breaking-change guard.
 
 ---
@@ -631,7 +631,7 @@ Conformance and the cycle finder answer *per-relationship* questions (is this ed
   ```
 
 - **REST**, `GET /api/workspace/architecture` returns the workspace metrics plus the per-service roles. Computed at request time from the system graph (no separate artifact); the conformance violation count, if a report exists, is folded into the score.
-- **MCP**, `get_architecture` gives an agent the score, propagation cost, core members, and role breakdown in one call, the system-structure read to consult before a cross-service refactor.
+- **MCP**, `get_architecture` gives an agent the score, propagation cost, core members, and role breakdown in one call, the system-structure read to consult before a cross-service refactor. It is opt-in, like `get_conformance` (`mcp.tools: ["+get_architecture"]`).
 - **Web**, the **architecture score** appears as a stat on both the Conformance and System Map pages. The DSM header shows score / propagation cost / core size and tints each service's diagonal cell by its role, so the on-diagonal core block stands out. On the Live System Map, toggle **Core** to highlight the cyclic core, and the inspector shows any selected service's role and visibility profile.
 
 ---

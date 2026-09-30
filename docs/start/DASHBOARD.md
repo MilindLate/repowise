@@ -323,9 +323,11 @@ These appear only when repowise is running over a multi-repo workspace. See
 [docs/scale/WORKSPACES.md](../scale/WORKSPACES.md) for setup.
 
 - `/workspace`: repo cards across the workspace with per-repo status.
-- `/workspace/system-map`: the cross-repo dependency picture, including a
-  design-structure matrix and package dependencies.
-- `/workspace/conformance`: where repos diverge from the shared patterns.
+- `/workspace/system-map`: the cross-repo dependency picture, services and the
+  HTTP, gRPC, event, package and database edges between them.
+- `/workspace/conformance`: declared dependency-rule violations and dependency
+  cycles, drawn as a design-structure matrix with the architecture score. See
+  [Architecture Conformance](../scale/WORKSPACES.md#architecture-conformance).
 - `/workspace/contracts`: API contracts extracted on the producer side matched
   against their consumers, so a breaking change is visible before it ships.
 - `/workspace/co-changes`: files in different repos that keep changing in the

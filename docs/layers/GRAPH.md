@@ -397,10 +397,17 @@ The graph is not the product. These are:
 | `get_risk(targets)` | What history and the graph say about touching these paths |
 | `get_execution_flows()` | Traced flows with their termination reason |
 | `get_dead_code()` | Unreachable files, unused exports and zombie packages, by confidence tier |
-| `get_blast_radius()` | Cross-repo impact, in workspace mode |
+| `get_blast_radius()` | Cross-repo impact, in workspace mode (opt-in) |
 
 **In the dashboard**, `repowise serve` gives you the graph, architecture,
 coupling, blast-radius, knowledge-graph and dead-code views.
+
+**Across a multi-repo workspace**, a service-level system graph built from
+contracts and package dependencies adds declared dependency rules, cycle
+detection, a dependency-structure matrix and a 1-10 architecture score. Those
+rules work between services, not between layers inside one repository. See
+[Architecture Conformance](../scale/WORKSPACES.md#architecture-conformance) and
+[Architecture Metrics](../scale/WORKSPACES.md#architecture-metrics).
 
 **Everything above is computed without a single model call.** An LLM is an
 optional upgrade for prose quality in the wiki. It is never part of building the
