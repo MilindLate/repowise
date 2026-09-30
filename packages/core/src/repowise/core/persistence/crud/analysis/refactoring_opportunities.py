@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ....test_paths import is_test_related_path
 from ...models import (
     HealthFinding,
     RefactoringOpportunity,
@@ -93,20 +94,33 @@ def _diversified_order(opportunities: list[OpportunityModel]) -> list[int]:
 
     Deterministic, and a repository with one cause in one area degrades to
     plain rank order rather than inventing a difference.
+
+    Test files are round-robined apart and queue after every production file,
+    as they rank, so the lead is never a test.
     """
-    groups: dict[tuple[str, str, str], list[int]] = {}
+    groups: dict[tuple[bool, str, str, str], list[int]] = {}
     for position, item in enumerate(opportunities):
         parent = item.file_path.rsplit("/", 1)[0] if "/" in item.file_path else ""
         area = "/".join(parent.split("/")[:2])
         groups.setdefault(
-            (item.lead_biomarker or "", item.lead_refactoring_type, area), []
+            (
+                is_test_related_path(item.file_path),
+                item.lead_biomarker or "",
+                item.lead_refactoring_type,
+                area,
+            ),
+            [],
         ).append(position)
-    ordered_groups = sorted(groups.values(), key=lambda members: members[0])
     order: list[int] = []
-    for round_index in range(max((len(m) for m in ordered_groups), default=0)):
-        for members in ordered_groups:
-            if round_index < len(members):
-                order.append(members[round_index])
+    for is_test in (False, True):
+        ordered_groups = sorted(
+            (members for key, members in groups.items() if key[0] is is_test),
+            key=lambda members: members[0],
+        )
+        for round_index in range(max((len(m) for m in ordered_groups), default=0)):
+            for members in ordered_groups:
+                if round_index < len(members):
+                    order.append(members[round_index])
     return order
 
 
@@ -368,8 +382,15 @@ async def finalize_refactoring_opportunities(
         analyzed_commit=analyzed_commit,
     )
 
-    lead_rank = queue_order[0] if queue_order else None
-    lead = opportunities[lead_rank] if lead_rank is not None else None
+    # Never a test file: with only tests left there is no lead to name.
+    lead = next(
+        (
+            opportunities[rank]
+            for rank in queue_order
+            if not is_test_related_path(opportunities[rank].file_path)
+        ),
+        None,
+    )
     lead_details = None
     if lead is not None:
         lead_details = {

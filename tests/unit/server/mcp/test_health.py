@@ -367,7 +367,7 @@ async def test_directive_admits_when_plans_target_a_different_biomarker(
         [
             {
                 "file_path": "src/auth/service.py",
-                "source_biomarker": "dry_violation",
+                "source_biomarker": "low_cohesion",
                 "impact_delta": 1.0,
             }
         ],
@@ -377,7 +377,31 @@ async def test_directive_admits_when_plans_target_a_different_biomarker(
     assert directive["plan_addresses_reason"] is False
     # Names the gap on both sides: the unaddressed cause and what is on offer.
     assert "complex_method" in directive["plan_note"]
-    assert "dry_violation" in directive["plan_note"]
+    assert "low_cohesion" in directive["plan_note"]
+
+
+@pytest.mark.asyncio
+async def test_directive_does_not_offer_a_plan_the_registry_withholds(
+    setup_mcp, health_data, session
+):
+    from repowise.server.mcp_server import get_health
+
+    await _seed_plans(
+        session,
+        health_data,
+        [
+            {
+                "file_path": "src/auth/service.py",
+                "source_biomarker": "dry_violation",
+                "impact_delta": 1.0,
+            }
+        ],
+    )
+
+    directive = (await get_health(only=["directive"]))["directive"]
+    assert directive["plan_addresses_reason"] is False
+    assert "dry_violation" not in directive["plan_note"]
+    assert "has no plans" in directive["plan_note"]
 
 
 @pytest.mark.asyncio

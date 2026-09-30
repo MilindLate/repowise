@@ -40,6 +40,7 @@ from repowise.core.persistence.crud import (
     load_coverage_for_repo,
     load_coverage_history,
 )
+from repowise.core.persistence.crud.analysis.refactoring import shown_plan_predicate
 from repowise.core.persistence.models import HealthFileMetric, RefactoringSuggestion
 from repowise.server.mcp_server._helpers import filter_rows_by_attr
 from repowise.server.mcp_server.tool_health.findings import (
@@ -435,9 +436,9 @@ async def _read_directive_plans(
     The directive points at ``include=['refactoring']`` for the fix, but some
     biomarkers have no plan kind, so it must know whether a plan addresses the
     cause it names. Read for the directive's candidates only, two columns, and
-    only when the directive survives the projection. ``status == "open"``
-    mirrors ``get_refactoring_suggestions``; candidates are already
-    exclude-filtered.
+    only when the directive survives the projection. ``status == "open"`` and
+    the registry predicate mirror ``get_refactoring_suggestions``; candidates
+    are already exclude-filtered.
     """
     plan_biomarkers_by_path: dict[str, set[str]] = {}
     plan_count_by_path: dict[str, int] = {}
@@ -453,6 +454,7 @@ async def _read_directive_plans(
                 RefactoringSuggestion.repository_id == repository.id,
                 RefactoringSuggestion.status == "open",
                 RefactoringSuggestion.file_path.in_(directive_paths),
+                shown_plan_predicate(),
             )
         )
     ).all():
