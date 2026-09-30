@@ -2237,6 +2237,7 @@ export interface PageResponse {
   created_at: string;
   updated_at: string;
   content: string;
+  digest?: string;
   metadata: Record<string, unknown>;
 }
 
