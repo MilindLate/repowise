@@ -426,6 +426,18 @@ class TestOpening:
             "It defines `walk_repo`. It is imported by `pkg/cli/main.py`."
         )
 
+    def test_a_rest_titled_docstring_is_summarised_by_its_prose(self, generator):
+        ctx = _context(docstring="Tagged JSON\n~~~~~~~~~~~\n\nA compact representation.")
+        page = generator._render_page(
+            page_type="file_page",
+            target_path=ctx.file_path,
+            title="File: pkg/mod/walk.py",
+            template="file_page.j2",
+            ctx=ctx,
+        )
+
+        assert page.summary == "A compact representation."
+
     def test_a_directory_is_named_only_when_it_clearly_leads(self, generator):
         spread = ["a/one.py", "b/two.py", "c/three.py", "d/four.py"]
         page = render(generator, _context(docstring=None, dependents=spread))

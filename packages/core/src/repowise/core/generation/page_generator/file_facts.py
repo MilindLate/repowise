@@ -33,8 +33,9 @@ _SENTENCE_END_RE = re.compile(r"(?<=[.!?])\s")
 
 
 def first_sentence(text: object, limit: int = _SYMBOL_DOC_LIMIT) -> str:
-    """The first sentence of a docstring, flattened to one markdown line."""
-    paragraph = as_markdown(text).split("\n\n", 1)[0]
+    """The first sentence of a docstring's prose, flattened to one line."""
+    paragraphs = [p for p in as_markdown(text).split("\n\n") if not p.startswith("#")]
+    paragraph = paragraphs[0] if paragraphs else ""
     flat = " ".join(paragraph.split())
     sentence = _SENTENCE_END_RE.split(flat, 1)[0]
     line = oneline(sentence, limit)

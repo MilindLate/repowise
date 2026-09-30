@@ -230,6 +230,28 @@ def test_as_markdown_drops_rest_directives():
     assert "Body text." in out
 
 
+def test_as_markdown_turns_a_rest_title_into_a_heading():
+    """Left as text, the underline renders and the title becomes the summary."""
+    from repowise.core.generation.page_generator.structural import as_markdown
+
+    out = as_markdown("Tagged JSON\n~~~~~~~~~~~\n\nA compact representation.\n")
+    assert out == "### Tagged JSON\n\nA compact representation."
+
+
+def test_as_markdown_drops_the_overline_of_a_rest_title():
+    from repowise.core.generation.page_generator.structural import as_markdown
+
+    out = as_markdown("=========\nBig Title\n=========\n\nSome prose.")
+    assert out == "### Big Title\n\nSome prose."
+
+
+def test_as_markdown_leaves_a_short_rule_under_prose_alone():
+    """reST requires the underline to be at least as long as the title."""
+    from repowise.core.generation.page_generator.structural import as_markdown
+
+    assert as_markdown("A longer line of prose.\n---\n") == "A longer line of prose.\n---"
+
+
 def test_as_markdown_dedents_so_the_body_is_not_a_code_block():
     """Four leading spaces would make markdown render the body as code."""
     from repowise.core.generation.page_generator.structural import as_markdown
