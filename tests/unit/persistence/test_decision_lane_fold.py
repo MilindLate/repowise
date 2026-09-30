@@ -132,3 +132,26 @@ async def test_two_archaeology_decisions_on_one_pr_do_not_fold(async_session):
     await bulk_upsert_decisions(async_session, repo.id, [_arch(), other, _pr()])
 
     assert len(await _rows(async_session, repo.id)) == 3
+
+
+async def test_same_pr_title_on_two_merges_still_folds_each(async_session):
+    repo = await insert_repo(async_session)
+    pr_b = {**_pr(commits=(_OTHER,)), "source_quote": "cache manifests again"}
+
+    await bulk_upsert_decisions(
+        async_session, repo.id, [_arch(), _pr(), _arch(sha=_OTHER[:8]), pr_b]
+    )
+
+    rows = await _rows(async_session, repo.id)
+    assert {r.source for r in rows} == {"pr"}
+
+
+async def test_archaeology_restating_a_dismissed_pr_record_is_dropped(async_session):
+    repo = await insert_repo(async_session)
+    (pr_id,) = await bulk_upsert_decisions(async_session, repo.id, [_pr()])
+    rec = await async_session.get(DecisionRecord, pr_id)
+    rec.status = "dismissed"
+    await async_session.flush()
+
+    assert await bulk_upsert_decisions(async_session, repo.id, [_arch()]) == []
+    assert len(await _rows(async_session, repo.id)) == 1

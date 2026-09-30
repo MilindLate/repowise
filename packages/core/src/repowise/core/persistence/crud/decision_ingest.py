@@ -130,9 +130,10 @@ async def bulk_upsert_decisions(
     """
     if not decisions:
         return []
-    existing_by_norm = await _existing_records_by_title(session, repository_id)
+    existing = await _existing_records(session, repository_id)
+    existing_by_norm = _records_by_title(existing)
     groups = _group_by_normalized_title(
-        fold_archaeology_into_pr(decisions, existing_by_norm.values(), _normalize_title)
+        fold_archaeology_into_pr(decisions, existing, _normalize_title)
     )
     if not groups:
         return []
@@ -236,18 +237,20 @@ def _group_by_normalized_title(decisions: list[dict]) -> dict[str, list[dict]]:
     return groups
 
 
-async def _existing_records_by_title(
-    session: AsyncSession, repository_id: str
-) -> dict[str, DecisionRecord]:
-    """This repository's records by normalized title, so cross-run merges land on one row.
+async def _existing_records(session: AsyncSession, repository_id: str) -> list[DecisionRecord]:
+    rows = await session.execute(
+        select(DecisionRecord).where(DecisionRecord.repository_id == repository_id)
+    )
+    return list(rows.scalars().all())
+
+
+def _records_by_title(records: list[DecisionRecord]) -> dict[str, DecisionRecord]:
+    """Records by normalized title, so cross-run merges land on one row.
 
     On a title collision the most authoritative existing row is canonical.
     """
-    existing_rows = await session.execute(
-        select(DecisionRecord).where(DecisionRecord.repository_id == repository_id)
-    )
     existing_by_norm: dict[str, DecisionRecord] = {}
-    for rec in existing_rows.scalars().all():
+    for rec in records:
         norm = _normalize_title(rec.title)
         prior = existing_by_norm.get(norm)
         if prior is None or rank_for_source(rec.source) > rank_for_source(prior.source):
