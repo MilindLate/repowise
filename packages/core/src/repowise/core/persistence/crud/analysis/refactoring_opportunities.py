@@ -111,16 +111,17 @@ def _diversified_order(opportunities: list[OpportunityModel]) -> list[int]:
             ),
             [],
         ).append(position)
+    return _round_robin([m for k, m in groups.items() if not k[0]]) + _round_robin(
+        [m for k, m in groups.items() if k[0]]
+    )
+
+
+def _round_robin(groups: list[list[int]]) -> list[int]:
+    """One member per group per round, groups ordered by their best member."""
+    ordered = sorted(groups, key=lambda members: members[0])
     order: list[int] = []
-    for is_test in (False, True):
-        ordered_groups = sorted(
-            (members for key, members in groups.items() if key[0] is is_test),
-            key=lambda members: members[0],
-        )
-        for round_index in range(max((len(m) for m in ordered_groups), default=0)):
-            for members in ordered_groups:
-                if round_index < len(members):
-                    order.append(members[round_index])
+    for round_index in range(max((len(m) for m in ordered), default=0)):
+        order.extend(m[round_index] for m in ordered if round_index < len(m))
     return order
 
 
