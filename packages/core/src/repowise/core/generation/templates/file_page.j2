@@ -43,7 +43,9 @@
 {%- set _ = about.append(labels.file_imported_by.format(subject="{subject}", names=name_list(imp.listed))) -%}
 {%- elif imp.count -%}
 {%- set _ = about.append(labels.file_imported_by_count.format(subject="{subject}", count=imp.count, tests=labels.of_them_tests.format(count=imp.tests) if imp.tests else "")) -%}
-{%- if imp.directory -%}
+{%- if imp.all_in_one -%}
+{%- set _ = about.append(labels.all_in_directory.format(directory=imp.directory)) -%}
+{%- elif imp.directory -%}
 {%- set _ = about.append((labels.largest_share_code if imp.tests else labels.largest_share).format(count=imp.share, directory=imp.directory)) -%}
 {%- endif -%}
 {%- endif -%}
@@ -52,7 +54,9 @@
 {%- set _ = where.append(labels.file_imports.format(subject="{subject}", names=name_list(dep.listed))) -%}
 {%- elif dep.count -%}
 {%- set _ = where.append(labels.file_imports_count.format(subject="{subject}", count=dep.count)) -%}
-{%- if dep.directory -%}
+{%- if dep.all_in_one -%}
+{%- set _ = where.append(labels.all_in_directory.format(directory=dep.directory)) -%}
+{%- elif dep.directory -%}
 {%- set _ = where.append(labels.largest_share.format(count=dep.share, directory=dep.directory)) -%}
 {%- endif -%}
 {%- endif -%}
@@ -67,7 +71,7 @@
 {%- set _ = where.append(labels.file_entry_point.format(subject="{subject}")) -%}
 {%- endif -%}
 {%- if not (facts.purpose or about or where) -%}
-{%- set _ = about.append(labels.file_fallback.format(subject="{subject}", language=ctx.language)) -%}
+{%- set _ = about.append(labels.file_fallback.format(subject="{subject}", article=labels.article_an if ctx.language and ctx.language[0] in "aeiou" else labels.article_a, language=ctx.language)) -%}
 {%- endif -%}
 {%- set sentences = (about + where) | with_subject(labels.it_subject if facts.purpose else facts.name, labels.it_subject) -%}
 {%- set paragraphs = [facts.purpose, sentences] if facts.purpose else [sentences[:about | length], sentences[about | length:]] -%}
@@ -89,7 +93,7 @@
     and the first sentence of its docstring, methods under their class.
 
     Names that are public to the parser without being anything a caller
-    reaches for (``log``, ``__all__``) are declared under the list rather than
+    reaches for (``log``, ``__all__``) are declared under the list, not
     dropped, with their signatures: ``content`` is also the index entry, and
     ``log`` alone would take ``structlog`` and ``get_logger`` out of it.
 -#}

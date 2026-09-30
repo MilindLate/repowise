@@ -357,10 +357,10 @@ class TestLayerRole:
 
 
 class TestOverview:
-    def test_a_file_with_no_api_borrows_the_graph_summary(self, generator):
+    def test_a_test_file_borrows_the_graph_summary(self, generator):
         page = render(
             generator,
-            _context(docstring=None, symbols=[], kg_node_summary="Tests for the walker."),
+            _context(docstring=None, is_test=True, kg_node_summary="Tests for the walker."),
         )
 
         assert "## Overview\n\nTests for the walker." in page
@@ -438,12 +438,88 @@ class TestOpening:
 
         assert page.summary == "A compact representation."
 
+    def test_an_overlined_rest_title_is_not_the_summary(self, generator):
+        ctx = _context(docstring="=========\nBig Title\n=========\n\nSome prose.")
+        page = generator._render_page(
+            page_type="file_page",
+            target_path=ctx.file_path,
+            title="File: pkg/mod/walk.py",
+            template="file_page.j2",
+            ctx=ctx,
+        )
+
+        assert page.summary == "Some prose."
+
+    def test_rust_impl_blocks_and_fields_are_not_definitions(self, generator):
+        ctx = _context(
+            docstring=None,
+            symbols=[
+                _symbol("Foo", "struct", signature="pub struct Foo"),
+                _symbol("x", "property", signature="pub x: i32"),
+                _symbol("Foo", "impl", signature="impl Foo"),
+                _symbol("area", "method", signature="pub fn area(&self) -> f64", parent_name="Foo"),
+                _symbol("Foo", "impl", signature="impl Foo"),
+            ],
+        )
+        page = render(generator, ctx)
+
+        assert "`walk.py` defines `Foo`." in page
+        assert page.count("impl Foo") == 0
+        assert "- `pub struct Foo`\n  - `pub fn area(&self) -> f64`" in page
+
+    def test_a_method_of_an_unlisted_class_is_nested_not_top_level(self, generator):
+        ctx = _context(
+            docstring=None,
+            symbols=[_symbol("run", "method", signature="def run(self)", parent_name="_Impl")],
+        )
+        page = render(generator, ctx)
+
+        assert "defines `run`" not in page
+        assert "- `_Impl`\n  - `def run(self)`" in page
+
+    def test_a_barrel_keeps_the_graph_summary(self, generator):
+        page = render(
+            generator,
+            _context(docstring=None, kg_tags=["barrel"], kg_node_summary="Re-export barrel for x/."),
+        )
+
+        assert "## Overview\n\nRe-export barrel for x/." in page
+
+    def test_the_fallback_uses_the_right_article(self, generator):
+        page = render(generator, _context(docstring=None, symbols=[], language="elixir"))
+
+        assert "`walk.py` is an elixir file." in page
+
     def test_a_directory_is_named_only_when_it_clearly_leads(self, generator):
         spread = ["a/one.py", "b/two.py", "c/three.py", "d/four.py"]
         page = render(generator, _context(docstring=None, dependents=spread))
 
         assert "It is imported by 4 files." in page
         assert " are in " not in page
+
+    def test_types_are_named_before_values(self, generator):
+        ctx = _context(
+            docstring=None,
+            symbols=[
+                _symbol("T_hook", "variable", signature="T_hook = TypeVar('T_hook')"),
+                _symbol("helper"),
+                _symbol("Walker", "class", signature="class Walker"),
+            ],
+        )
+
+        assert "`walk.py` defines `Walker`, `helper` and `T_hook`." in render(generator, ctx)
+
+    def test_a_single_directory_is_said_once(self, generator):
+        page = render(generator, _context(dependents=[*DEPS[:3], "pkg/resolvers/zig.py"]))
+
+        assert "It is imported by 4 files. All of them are in `pkg/resolvers`." in page
+
+    def test_importers_that_are_all_tests_name_no_directory(self, generator):
+        tests = [f"tests/test_{n}.py" for n in ("a", "b", "c", "d")]
+        page = render(generator, _context(dependents=tests))
+
+        assert "It is imported by 4 files (4 of them tests)." in page
+        assert "Of the others" not in page
 
     def test_an_entry_point_says_so(self, generator):
         page = render(generator, _context(is_entry_point=True))
@@ -462,7 +538,7 @@ GOLDEN = """# pkg/mod/walk.py
 
 ## Overview
 
-`walk.py` defines `walk_repo` and `WalkSnapshot`. It is imported by `pkg/cli/main.py`.
+`walk.py` defines `WalkSnapshot` and `walk_repo`. It is imported by `pkg/cli/main.py`.
 
 It imports 4 files from this repository. 3 of them are in `pkg/resolvers`. \
 It belongs to the Core Pipeline layer, and other layers import it.
