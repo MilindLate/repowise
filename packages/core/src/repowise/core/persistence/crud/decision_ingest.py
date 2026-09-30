@@ -27,6 +27,7 @@ from .decision_identity import (
     _merge_status,
     derive_decision_id,
 )
+from .decision_lane_fold import fold_archaeology_into_pr, merge_folded_files
 from .decision_review_meta import _write_candidate_meta
 
 
@@ -119,15 +120,23 @@ async def bulk_upsert_decisions(
     Every touched record is (re-)embedded into the store, so decisions are
     matchable next run *and* discoverable via ``search_codebase``.
 
+    A ``git_archaeology`` decision mined from the same merge commit as a ``pr``
+    decision takes the PR title first, so the pair folds into the PR record
+    (:func:`fold_archaeology_into_pr`) without needing an embedder.
+
     Returns the ids of every record touched (created or updated) this call, so
     a caller can run the Phase-3 supersession/conflict detection over just the
     records that changed.
     """
-    groups = _group_by_normalized_title(decisions)
+    if not decisions:
+        return []
+    existing_by_norm = await _existing_records_by_title(session, repository_id)
+    groups = _group_by_normalized_title(
+        fold_archaeology_into_pr(decisions, existing_by_norm.values(), _normalize_title)
+    )
     if not groups:
         return []
 
-    existing_by_norm = await _existing_records_by_title(session, repository_id)
     # A store hit (which returns a decision id) resolves back to the live
     # record through this map, and it is grown as records are created so
     # paraphrases *within* one batch also collapse.
@@ -190,6 +199,7 @@ async def bulk_upsert_decisions(
             id_to_rec[rec.id] = rec
         if not created:
             _maybe_promote_headline(rec, headline)
+        merge_folded_files(rec, members)
 
         await _accrete_evidence(session, rec.id, members)
 
