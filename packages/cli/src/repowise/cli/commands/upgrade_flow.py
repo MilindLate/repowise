@@ -233,6 +233,7 @@ async def _sync_authoritative_fts(
                 page.content,
                 summary=page.summary,
                 target_path=page.target_path,
+                digest=page.digest,
             )
     except BaseException:
         record_cleanup_debt(repo_path, "fts", cleanup_ids)

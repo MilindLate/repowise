@@ -308,6 +308,7 @@ async def execute_scoped_generation(
                     page.content,
                     summary=page.summary,
                     target_path=page.target_path,
+                    digest=page.digest,
                 )
         except Exception as exc:
             logger.debug("fts_index_skipped", error=str(exc))

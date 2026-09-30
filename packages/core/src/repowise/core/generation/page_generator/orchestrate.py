@@ -1052,6 +1052,7 @@ def _embed_item(page: GeneratedPage) -> tuple[str, str, dict] | None:
         summary=page.summary,
         content=page.content,
         page_metadata=page.metadata,
+        digest=page.digest,
     )
 
 

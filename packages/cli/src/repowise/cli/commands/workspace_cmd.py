@@ -810,6 +810,7 @@ def _generate_docs_for_added_repo(
                 p.content,
                 summary=p.summary,
                 target_path=p.target_path,
+                digest=p.digest,
             )
         await engine.dispose()
         return len(pages)

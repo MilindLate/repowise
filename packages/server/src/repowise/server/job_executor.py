@@ -674,6 +674,7 @@ async def _refresh_fts(fts: Any, swept_page_ids: Any, pages: list) -> None:
             page.content,
             summary=page.summary,
             target_path=page.target_path,
+            digest=page.digest,
         )
 
 

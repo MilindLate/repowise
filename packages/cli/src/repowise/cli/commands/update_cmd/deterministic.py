@@ -383,6 +383,7 @@ async def _persist_async(
                     page.content,
                     summary=page.summary,
                     target_path=page.target_path,
+                    digest=page.digest,
                 )
         except Exception as exc:
             degraded.append(f"Full-text index: {exc}")

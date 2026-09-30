@@ -97,13 +97,21 @@ async def _index_preserved_pages(sf: Any, fts: Any, preserved_page_ids: set[str]
                             Page.content,
                             Page.summary,
                             Page.target_path,
+                            Page.digest,
                         ).where(Page.id.in_(batch))
                     )
                 ).all()
             await fts.index_many(
                 [
-                    (page_id, title or "", content or "", summary or "", target_path or "")
-                    for page_id, title, content, summary, target_path in rows
+                    (
+                        page_id,
+                        title or "",
+                        content or "",
+                        summary or "",
+                        target_path or "",
+                        digest or "",
+                    )
+                    for page_id, title, content, summary, target_path, digest in rows
                 ]
             )
     except Exception as exc:  # pragma: no cover - defensive
@@ -269,7 +277,14 @@ async def persist_result(
         if fts is not None and result.generated_pages:
             await fts.index_many(
                 [
-                    (page.page_id, page.title, page.content, page.summary, page.target_path)
+                    (
+                        page.page_id,
+                        page.title,
+                        page.content,
+                        page.summary,
+                        page.target_path,
+                        page.digest,
+                    )
                     for page in result.generated_pages
                 ]
             )

@@ -1345,6 +1345,7 @@ async def _persist_full_update_async(
                     page.content,
                     summary=page.summary,
                     target_path=page.target_path,
+                    digest=page.digest,
                 )
             # A tombstone can never be an answer — hydration drops it — but
             # retrieval fetches a fixed number of rows before that check runs,

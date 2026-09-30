@@ -1660,6 +1660,7 @@ def run_update(
                             summary=page.summary,
                             content=page.content,
                             page_metadata=page.metadata,
+                            digest=page.digest,
                         )
                     )
                     is not None
