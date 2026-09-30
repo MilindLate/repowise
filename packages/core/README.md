@@ -226,8 +226,8 @@ print(f"Deletable lines: {report.deletable_lines:,}")
 ## Page Types
 
 repowise generates these page types in a strict dependency-aware order. The
-subsystem-and-overview set (`module_page`, `repo_overview`,
-`architecture_diagram`, `onboarding`) is the one model-written layer: model prose
+subsystem-and-overview set (`module_page`, `repo_overview`, `onboarding`)
+is the one model-written layer: model prose
 when a provider is configured, structural stubs otherwise. Every other type is
 always rendered from structure, with no model and no key.
 
@@ -239,8 +239,7 @@ always rendered from structure, with no model and no key.
 | 3 | `scc_page` | structure | Circular dependency cluster summary |
 | 4 | `module_page` | **model or stub** | Subsystem (concept) tree above the file level |
 | 5 | `layer_page` | structure | Architectural layer summary |
-| 6 | `repo_overview` | model or stub | Repository overview |
-| 6 | `architecture_diagram` | model or stub | Repo-level architecture diagram |
+| 6 | `repo_overview` | model or stub | Repository overview, with the system map |
 | 7 | `infra_page` | structure | Dockerfile, CI YAML, Makefile documentation |
 | 8 | `onboarding` | model or stub | Curated onboarding collection |
 
