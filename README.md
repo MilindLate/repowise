@@ -804,7 +804,7 @@ agent over MCP.
 | **Time to build the graph** *([measured](docs/BENCHMARKS.md#what-it-costs-to-run), same run)* | **2.77s**, fastest on 14 of 35 | **3.65s**, fastest on 16 | not measured | n/a, cloud |
 | **Time to build the full index, django** *([measured](docs/BENCHMARKS.md#what-it-costs-to-run))* | ⚠️ **366.8s**, slowest here | ✅ **16.4s** | not measured | n/a, cloud |
 | | *five layers against their one; one-time, updates after it are incremental* | | | |
-| **Call-edge precision** *([measured](docs/BENCHMARKS.md#7-edge-precision), 540 rows hand-graded from source)* | ✅ **84.8%** | 57.0% | not measured | not measured |
+| **Call-edge precision** *([measured](docs/BENCHMARKS.md#7-edge-precision), 560 rows hand-graded from source)* | ✅ **85.7%** | 58.6% | not measured | not measured |
 | **Call-edge precision, judged by a compiler** *([measured](docs/BENCHMARKS.md#8-the-same-question-against-an-answer-key-we-do-not-control), 5 tools, 7 cells, 37,853 edges)* | ✅ **nothing that finds as much gets more of it right**, 7 of 7 | lower precision in 7, and lower recall in 5 | not measured | not measured |
 | Generated documentation | ✅ | ❌ | ❌ | ✅ |
 | Proactive agent hooks | ✅ Claude + Codex | ❌ | ❌ | ❌ |
@@ -824,7 +824,7 @@ trade and you should take it. With prose generation on, which is what a default
 code-review-graph were in the same measured field and are on the benchmarks page.
 
 The precision row cuts the other way and is worth stating as plainly: of the call
-edges we draw, **about fifteen percent are wrong**, and on `seastar` CodeGraph
+edges we draw, **about fourteen percent are wrong**, and on `seastar` CodeGraph
 grades better than we do. Nine languages were read on both sides, four separate,
 five are statistical ties.
 

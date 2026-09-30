@@ -427,7 +427,7 @@ graph, which is why the graph is reproducible and why indexing needs no API key.
 - **Method-level dead-code detection is not shipped**, for any language. It was
   measured, precision failed, and shipping it would have meant confidently
   recommending deletions that were wrong.
-- **Roughly fifteen percent of our call edges are wrong**, and **we lead no Go
+- **Roughly fourteen percent of our call edges are wrong**, and **we lead no Go
   recall cell**. Both are measured, both are above under [how good is it, and how
   we know](#how-good-is-it-and-how-we-know), and neither is buried down here.
 - **Two competing tools are more precise than us in five of seven oracle cells.**
@@ -435,8 +435,9 @@ graph, which is why the graph is reproducible and why indexing needs no API key.
   stated above rather than left out. A precision figure quoted without the recall
   beside it is a misuse of this data, including by us.
 - **The compiler-graded reading covers two languages.** Go and TypeScript are the
-  only ones with an oracle, so on the other seventeen the precision figure is the
-  hand-graded one, at 30 rows per language. That is a smaller n and a method we
+  only ones with an oracle. On seven more the precision figure is the
+  hand-graded one, at 30 rows per language (40 for Java), and the other parsed
+  languages have no published precision figure. That is a smaller n and a method we
   ran ourselves; the two agree to within a point where both exist, which is the
   reason to trust the half where only one does.
 - **A competitor's coverage lead is only priced on two languages too.** The tool
