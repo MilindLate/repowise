@@ -529,14 +529,15 @@ def test_file_page_renders_german_headings_and_prose(german_generator):
         "## Öffentliche API",
         "## Abhängigkeiten",
         "## Wird verwendet von",
-        "## Nutzungshinweise",
         "## Fragen, die diese Seite beantwortet",
     ):
         assert heading in page.content, heading
     # The file vocabulary is embedded from metadata, never rendered.
     assert "## Im Code" not in page.content
-    assert "Sie stellt 1 öffentliches Symbol bereit" in page.content
-    assert "Importiert von 1 Datei in diesem Repository." in page.content
+    assert "`parser.py` definiert `parse_file`." in page.content
+    assert "Die Datei wird von `src/pipeline.py` importiert." in page.content
+    assert "Die Datei gehört zur Schicht ingestion." in page.content
+    assert "Die Datei ist ein Einstiegspunkt." in page.content
     # Identifiers are never translated, in any language.
     assert "`src/service/parser.py`" in page.content
     assert "`parse_file`" in page.content

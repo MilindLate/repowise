@@ -502,6 +502,9 @@ def register_filters(env: Any) -> None:
     that reaches for a filter the caller forgot raises at render time, and the
     callers are the generator and four test fixtures.
     """
+    # Local: file_facts builds on the filters defined in this module.
+    from .file_facts import file_facts, symbol_entries, with_subject
+
     for name, fn in (
         ("oneline", oneline),
         ("as_markdown", as_markdown),
@@ -515,6 +518,10 @@ def register_filters(env: Any) -> None:
         ("code_span", code_span),
         ("group_paths", group_paths),
         ("datestamp", datestamp),
+        # The file page's opening sentences and its API list.
+        ("file_facts", file_facts),
+        ("symbol_entries", symbol_entries),
+        ("with_subject", with_subject),
     ):
         env.filters.setdefault(name, fn)
 
