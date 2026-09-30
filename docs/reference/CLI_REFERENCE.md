@@ -62,7 +62,7 @@ Grouped by what you're trying to do, not alphabetically. `PATH` and flag details
 [`augment`](#repowise-augment)
 
 **Server**
-[`serve`](#repowise-serve-path) ·
+[`serve`](#repowise-serve) ·
 [`mcp`](#repowise-mcp-path)
 
 **Workspace**
