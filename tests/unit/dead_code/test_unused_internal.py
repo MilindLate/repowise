@@ -247,6 +247,23 @@ def test_a_constructor_with_only_containment_edges_does_not_rescue_its_class():
     assert _private_nested_classes(edges) == {"Inner", "Spare"}
 
 
+def test_recursive_constructor_does_not_rescue_its_class():
+    """A self-loop on a constructor must not count as use."""
+    ctor = "src/Outer.cs::Inner::Inner"
+    edges = [(ctor, ctor, {"edge_type": "calls"})]
+    assert _private_nested_classes(edges) == {"Inner", "Spare"}
+
+
+def test_recursive_constructor_with_external_caller_is_used():
+    """A constructor with a self-loop AND an external caller is used."""
+    ctor = "src/Outer.cs::Inner::Inner"
+    edges = [
+        (ctor, ctor, {"edge_type": "calls"}),
+        ("src/Main.cs::Main::Run", ctor, {"edge_type": "calls"})
+    ]
+    assert _private_nested_classes(edges) == {"Spare"}
+
+
 def test_unused_internal_still_flagged_with_only_containment_edges():
     """A ``defines`` / ``has_method`` containment edge alone must not count as use."""
     g = _build_graph(

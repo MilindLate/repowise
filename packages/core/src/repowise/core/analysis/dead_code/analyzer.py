@@ -1693,18 +1693,43 @@ class DeadCodeAnalyzer:
         """Whether any reachability-use edge lands on *node* or its overload set."""
         members = self._overload_unit(node)
         if members:
-            return any(self._lands_on(member) for member in members)
-        return self._lands_on(node)
+            return any(self._lands_on(member, candidate_span_node=node) for member in members)
+        return self._lands_on(node, candidate_span_node=node)
 
-    def _lands_on(self, node: str) -> bool:
+    def _lands_on(self, node: str, candidate_span_node: str | None = None) -> bool:
         """Whether any reachability-use edge lands on *node* (False if absent)."""
         if not self.graph.has_node(node):
             return False
-        return any(
-            self.graph.get_edge_data(pred, node, {}).get("edge_type")
-            in REACHABILITY_USE_EDGE_TYPES
-            for pred in self.graph.predecessors(node)
-        )
+            
+        c_node = candidate_span_node or node
+        c_data = self.graph.nodes.get(c_node, {})
+        c_start, c_end = c_data.get("start_line"), c_data.get("end_line")
+        c_file = c_data.get("file_path")
+
+        for pred in self.graph.predecessors(node):
+            if self.graph.get_edge_data(pred, node, {}).get("edge_type") not in REACHABILITY_USE_EDGE_TYPES:
+                continue
+                
+            if pred == c_node:
+                continue
+                
+            if c_start is not None and c_end is not None and c_file:
+                p_data = self.graph.nodes.get(pred, {})
+                p_start, p_end = p_data.get("start_line"), p_data.get("end_line")
+                p_file = p_data.get("file_path")
+                
+                if (
+                    p_file == c_file
+                    and p_start is not None
+                    and p_end is not None
+                    and c_start <= p_start
+                    and p_end <= c_end
+                ):
+                    continue
+                    
+            return True
+            
+        return False
 
     def _is_internal_candidate(
         self, node_data: dict, dynamic_patterns: tuple[str, ...], whitelist: set[str]
