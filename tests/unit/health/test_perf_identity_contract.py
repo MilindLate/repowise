@@ -29,9 +29,9 @@ from repowise.core.analysis.health.refactoring.performance_fix import (
     performance_fix_suggestions,
 )
 
-# The v2 kernel, pinned. A change to either string is a model-version change.
-CROSS_FUNCTION_ID = "perf2_5662c38bc84c9a677164"
-LOCAL_ID = "perf2_f13beed790fd3cb29ac1"
+# The v3 kernel, pinned. A change to either string is a model-version change.
+CROSS_FUNCTION_ID = "perf3_5662c38bc84c9a677164"
+LOCAL_ID = "perf3_f13beed790fd3cb29ac1"
 
 
 def _row(**overrides):
@@ -71,7 +71,7 @@ def test_the_model_version_is_pinned_and_is_carried_by_the_id_prefix() -> None:
     alias table cannot: an id says which model minted it, so a caller holding a
     stale one is told to refresh instead of being handed the wrong group.
     """
-    assert PERFORMANCE_MODEL_VERSION == 2
+    assert PERFORMANCE_MODEL_VERSION == 3
     assert opportunity_id_for_finding(_row()) == CROSS_FUNCTION_ID
     assert opportunity_id_for_finding(_local_row()) == LOCAL_ID
     assert CROSS_FUNCTION_ID.startswith(f"perf{PERFORMANCE_MODEL_VERSION}_")
@@ -80,7 +80,8 @@ def test_the_model_version_is_pinned_and_is_carried_by_the_id_prefix() -> None:
 @pytest.mark.parametrize(
     ("opportunity_id", "state", "version"),
     [
-        (CROSS_FUNCTION_ID, "current", 2),
+        (CROSS_FUNCTION_ID, "current", 3),
+        ("perf2_5662c38bc84c9a677164", "stale_model", 2),
         ("perf_e358397251b660183fdd", "stale_model", 1),
         ("perf9_e358397251b660183fdd", "stale_model", 9),
         ("not-an-opportunity-id", "unrecognized", None),

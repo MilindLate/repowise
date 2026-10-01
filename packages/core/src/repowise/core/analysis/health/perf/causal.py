@@ -24,7 +24,7 @@ from repowise.core.test_paths import is_test_related_path
 
 from .facts import ObservationFacts, detail_map, is_performance, observation_facts
 
-PERFORMANCE_MODEL_VERSION = 2
+PERFORMANCE_MODEL_VERSION = 3
 """Version of the identity, grouping, actionability, and ranking semantics.
 
 From version 2 the version is the id prefix rather than a hash input, so a
@@ -32,6 +32,9 @@ stale id is recognisable without a lookup and :func:`model_state` can answer
 from the string alone. Version 1 ids carry no digit and remain readable as
 version 1. Moving this constant means bumping ``HEALTH_ANALYZER_VERSION`` with
 it, which forces the rescore that restamps every stored finding.
+
+Version 3 classes schema migrations as ``tooling`` in :func:`execution_context`,
+a kernel input. Digests of every other path are unchanged; only the prefix moved.
 """
 
 ExecutionContext = Literal["production", "tooling", "test", "unknown"]

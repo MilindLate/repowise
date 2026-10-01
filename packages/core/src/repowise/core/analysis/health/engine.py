@@ -107,8 +107,9 @@ log = structlog.get_logger(__name__)
 # Current stamp (v37): schema migrations are ``tooling`` in the performance
 # ``execution_context`` (any ``migrations/`` directory, Rails ``db/migrate``,
 # Alembic ``alembic/versions``). The context is stored on every performance
-# opportunity and is a kernel input to its id, so a v36 store holds those
-# opportunities as ``production`` under ids this version no longer mints.
+# opportunity and is a kernel input to its id, so ``PERFORMANCE_MODEL_VERSION``
+# moved 2 -> 3 with it: every performance id now carries the ``perf3_`` prefix,
+# and a held ``perf2_`` id reports ``stale_model`` instead of a silent miss.
 #
 # v36 (also): which files are tests changed (``repowise.core.test_paths``).
 # Compound directories headed by a test word (``e2e-tests/``, ``pkg_tests/``,

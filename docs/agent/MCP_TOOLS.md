@@ -1298,8 +1298,8 @@ materialized the analysis yet, or did so under an older model.
 get_health()                                                  # the lead
 get_health(include=["performance"], only=["performance_summary"])
 get_health(include=["performance"], only=["performance_opportunities"], performance_context="all")
-get_health(opportunity_id="perf2_...")                        # the cause, its plan, its evidence
-get_health(opportunity_id="perf2_...", only=["performance_evidence"], cursor=3)
+get_health(opportunity_id="perf3_...")                        # the cause, its plan, its evidence
+get_health(opportunity_id="perf3_...", only=["performance_evidence"], cursor=3)
 ```
 
 Ids are stable within a performance model version and are never translated
