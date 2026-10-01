@@ -87,6 +87,7 @@ class RefactoringQuery:
     addresses_primary: bool | None = None
     file_paths: tuple[str, ...] | None = None
     path_contains: str | None = None
+    path_prefix: str | None = None
     view: str = DEFAULT_VIEW
     order: str | None = None
     limit: int = 20
@@ -121,6 +122,7 @@ def parse_query(
     addresses_primary: bool | None = None,
     file_paths: list[str] | tuple[str, ...] | None = None,
     search: str | None = None,
+    path_prefix: str | None = None,
     view: str | None = None,
     order: str | None = None,
     limit: int = 20,
@@ -177,6 +179,7 @@ def parse_query(
             # the whole repository.
             file_paths=tuple(file_paths) if file_paths is not None else None,
             path_contains=(search or "").strip() or None,
+            path_prefix=path_prefix or None,
             view=resolved_view,
             order=admit("order", order, CANONICAL_ORDERS),
             limit=max(int(limit), 0),
@@ -245,6 +248,7 @@ class RefactoringHealthService:
             effort=query.effort,
             file_paths=list(query.file_paths) if query.file_paths is not None else None,
             path_contains=query.path_contains,
+            path_prefix=query.path_prefix,
             mechanical_only=query.mechanical_only,
             addresses_primary=query.addresses_primary,
             order=query.resolved_order,

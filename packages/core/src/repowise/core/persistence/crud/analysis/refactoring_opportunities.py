@@ -501,6 +501,7 @@ def _opportunity_filters(
     effort: str | None,
     file_paths: list[str] | None,
     path_contains: str | None,
+    path_prefix: str | None,
     mechanical_only: bool,
     addresses_primary: bool | None,
 ) -> list[Any]:
@@ -533,6 +534,14 @@ def _opportunity_filters(
                 f"%{escape_like(path_contains)}%", escape=LIKE_ESCAPE
             )
         )
+    if path_prefix:
+        # A directory scope (the CLI's ``--module``), counted in the store so
+        # the total is exact rather than a capped over-fetch narrowed later.
+        predicates.append(
+            RefactoringOpportunity.file_path.like(
+                f"{escape_like(path_prefix)}%", escape=LIKE_ESCAPE
+            )
+        )
     if mechanical_only:
         predicates.append(RefactoringOpportunity.mechanical_steps > 0)
     if addresses_primary is not None:
@@ -552,6 +561,7 @@ async def list_refactoring_opportunities(
     effort: str | None = None,
     file_paths: list[str] | None = None,
     path_contains: str | None = None,
+    path_prefix: str | None = None,
     mechanical_only: bool = False,
     addresses_primary: bool | None = None,
     order: str = DEFAULT_ORDER,
@@ -567,6 +577,7 @@ async def list_refactoring_opportunities(
         effort=effort,
         file_paths=file_paths,
         path_contains=path_contains,
+        path_prefix=path_prefix,
         mechanical_only=mechanical_only,
         addresses_primary=addresses_primary,
     )

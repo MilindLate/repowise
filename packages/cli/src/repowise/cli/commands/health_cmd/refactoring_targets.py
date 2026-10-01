@@ -104,13 +104,6 @@ def _render_refactoring_targets(
     )
 
 
-# A module filter is a prefix and the store matches a substring, so the read
-# over-fetches and narrows here. Ceiling: a module with more open
-# opportunities than this lists only the first ones; a prefix filter in the
-# store is the upgrade.
-_STORED_MODULE_READ_CAP = 500
-
-
 def _render_stored_refactoring_targets(
     repo_path: Path,
     *,
@@ -151,15 +144,13 @@ def _render_stored_refactoring_targets(
                 return None
             query, _ignored = parse_query(
                 file_paths=[file_filter] if file_filter else None,
-                search=module_filter,
-                limit=_STORED_MODULE_READ_CAP if module_filter else limit,
+                path_prefix=module_filter,
+                limit=limit,
             )
             page = await service.page(query)
-            items = [item for item in page.items if keep(item["file_path"])]
-            total = len(items) if module_filter else page.total
             details = [
                 await service.detail(item["opportunity_id"], step_limit=200, evidence_limit=50)
-                for item in items[:limit]
+                for item in page.items
             ]
             metrics = [
                 m for m in await crud.get_health_metrics(session, repo_id) if keep(m.file_path)
@@ -173,7 +164,7 @@ def _render_stored_refactoring_targets(
             ]
             return {
                 "summary": summary,
-                "total": total,
+                "total": page.total,
                 "details": details,
                 "metrics": metrics,
                 "findings": findings,
@@ -191,7 +182,8 @@ def _render_stored_refactoring_targets(
     if fmt == "table":
         commit = f" at {analyzed_commit[:7]}" if analyzed_commit else ""
         console.print(
-            f"[dim]Read from the index{commit}. Pass --recompute to analyze the "
+            f"[dim]Read from the index{commit}. Showing {len(rows)} of "
+            f"{stored['total']} open opportunities. Pass --recompute to analyze the "
             "working tree instead.[/dim]"
         )
     _emit(
@@ -354,6 +346,9 @@ def _opportunity_row(o) -> dict:
     """The wire shape, matching the server's queue row field for field."""
     return {
         "opportunity_id": o.opportunity_id,
+        # Freshly composed, so no triage has touched it yet: the same state the
+        # stored queue lists by default.
+        "status": "open",
         "file_path": o.file_path,
         "lead_biomarker": o.lead_biomarker,
         "lead_refactoring_type": o.lead_refactoring_type,

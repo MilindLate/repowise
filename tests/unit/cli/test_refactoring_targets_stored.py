@@ -59,7 +59,7 @@ def _finding(path: str, symbol: str) -> dict[str, Any]:
 _PATHS = [f"pkg{i % 3}/mod{i}.py" for i in range(6)]
 
 
-async def _store(repo_path: Path) -> list[str]:
+async def _store(repo_path: Path, paths: list[str] = _PATHS) -> list[str]:
     """Seed one opportunity per file; return the stored queue order."""
     from repowise.core.persistence import (
         create_engine,
@@ -81,12 +81,12 @@ async def _store(repo_path: Path) -> list[str]:
         async with get_session(create_session_factory(engine)) as session:
             repo = await upsert_repository(session, name="repo", local_path=str(repo_path))
             await crud.save_health_findings(
-                session, repo.id, [_finding(p, f"sym{i}") for i, p in enumerate(_PATHS)]
+                session, repo.id, [_finding(p, f"sym{i}") for i, p in enumerate(paths)]
             )
             await crud.save_refactoring_suggestions(
                 session,
                 repo.id,
-                [_plan(p, f"sym{i}", float(len(_PATHS) - i)) for i, p in enumerate(_PATHS)],
+                [_plan(p, f"sym{i}", float(len(paths) - i)) for i, p in enumerate(paths)],
             )
             await crud.finalize_refactoring_opportunities(
                 session, repo.id, analyzed_commit="c" * 40
@@ -169,3 +169,46 @@ def test_no_stored_analysis_names_both_ways_forward(repo, monkeypatch):
 
     assert result.exit_code != 0
     assert "--recompute" in result.output
+
+
+def test_a_module_larger_than_the_page_reports_its_exact_total(repo, monkeypatch):
+    """The prefix is matched in the store, so the total is counted, not capped."""
+    wide = [f"big/mod{i}.py" for i in range(25)] + [f"other/mod{i}.py" for i in range(5)]
+    run_async(_store(repo, wide))
+    _no_parse(monkeypatch)
+
+    result = CliRunner().invoke(
+        health_command,
+        [str(repo), "--refactoring-targets", "--format", "json", "--no-workspace",
+         "--module", "big/"],
+    )
+
+    assert result.exit_code == 0, result.output
+    out = json.loads(result.output[result.output.index("{") :])
+    assert out["opportunities_total"] == 25
+    assert len(out["refactoring_opportunities"]) == 20
+    assert all(o["file_path"].startswith("big/") for o in out["refactoring_opportunities"])
+
+
+def test_both_sources_emit_one_row_schema(repo, monkeypatch):
+    from repowise.cli.commands.health_cmd.refactoring_targets import (
+        _compose,
+        _opportunity_row,
+    )
+    from repowise.core.analysis.health.refactoring.recommendations import (
+        rehydrate_suggestion,
+    )
+
+    run_async(_store(repo))
+    _no_parse(monkeypatch)
+    result = CliRunner().invoke(
+        health_command,
+        [str(repo), "--refactoring-targets", "--format", "json", "--no-workspace"],
+    )
+    stored = json.loads(result.output[result.output.index("{") :])["refactoring_opportunities"][0]
+
+    suggestions = [rehydrate_suggestion(_plan("pkg0/mod0.py", "sym0", 1.0))]
+    recomputed = _opportunity_row(_compose([], suggestions)[0][0])
+
+    assert set(recomputed) == set(stored)
+    assert set(recomputed["steps"][0]) == set(stored["steps"][0])
