@@ -122,7 +122,7 @@ def oidc_token(env: dict[str, str]) -> str:
 
 
 def identity(env: dict[str, str], pr_number: int | None) -> tuple[str | None, str]:
-    """``(token, auth)``: auth is ``oidc``, ``tokenless`` or ``skip``."""
+    """``(token, auth)``: auth is ``oidc``, ``tokenless``, ``private-fork`` or ``skip``."""
     from_fork = env.get("FROM_FORK") == "true" and pr_number is not None
     if env.get("ACTIONS_ID_TOKEN_REQUEST_URL"):
         try:
@@ -131,8 +131,9 @@ def identity(env: dict[str, str], pr_number: int | None) -> tuple[str | None, st
             if not from_fork:
                 raise UploadError(f"Could not get a GitHub OIDC token: {exc}") from None
     if from_fork:
-        # A fork's pull request cannot mint a token; the server checks the PR instead.
-        return None, "tokenless"
+        # A fork's pull request cannot mint a token; the server checks the PR instead,
+        # and only on a public repository.
+        return None, "private-fork" if env.get("REPO_PRIVATE") == "true" else "tokenless"
     return None, "skip"
 
 
@@ -184,6 +185,12 @@ def upload(env: dict[str, str], cwd: Path) -> str:
         warn(
             "Coverage was not uploaded: the job cannot prove it runs in this repository. "
             "Add `permissions: id-token: write` to the workflow or job."
+        )
+        return "skipped"
+    if auth == "private-fork":
+        warn(
+            "Coverage was not uploaded: a pull request from a fork of a private repository "
+            "cannot prove where it runs."
         )
         return "skipped"
 

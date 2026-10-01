@@ -222,5 +222,6 @@ runs:
         EVENT_NAME: ${{ github.event_name }}
         RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         FROM_FORK: ${{ github.event.pull_request && github.event.pull_request.head.repo.full_name != github.repository }}
+        REPO_PRIVATE: ${{ github.event.repository.private }}
         PYTHONUTF8: "1"
       run: python "$GITHUB_ACTION_PATH/ci/github/upload_coverage.py"

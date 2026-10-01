@@ -130,6 +130,7 @@ def _env(tmp_path: Path, **extra: str) -> dict[str, str]:
         "EVENT_NAME": "pull_request",
         "RUN_URL": "https://github.com/owner/name/actions/runs/1",
         "FROM_FORK": "false",
+        "REPO_PRIVATE": "false",
         **extra,
     }
 
@@ -182,6 +183,13 @@ def test_a_fork_without_a_token_uploads_tokenless(monkeypatch, tmp_path, repo) -
     output = _run(monkeypatch, tmp_path, repo, net, FROM_FORK="true")
     assert output == "upload=accepted"
     assert net.posts[0].get_header("Authorization") is None
+
+
+def test_a_fork_of_a_private_repository_skips(monkeypatch, tmp_path, repo, capsys) -> None:
+    net = FakeNet()
+    output = _run(monkeypatch, tmp_path, repo, net, FROM_FORK="true", REPO_PRIVATE="true")
+    assert output == "upload=skipped" and not net.posts
+    assert "fork of a private repository" in capsys.readouterr().out
 
 
 def test_a_fork_falls_back_to_tokenless_when_the_token_fails(monkeypatch, tmp_path, repo) -> None:
