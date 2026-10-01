@@ -120,6 +120,12 @@ log = structlog.get_logger(__name__)
 # and a declining call's arguments are not scanned, so an assertion passed as an
 # argument still does not stand in for the header's oracle.
 #
+# v37: refactoring plans credit what they remove. Extract Method, Extract
+# Class (``god_class``) and Extract Helper claim the share of the finding that
+# moves, a span must clear a minimum-worth floor, ``slice_nloc`` counts code
+# lines only, and JSX prop plumbing earns no Extract Method. Stored plans and
+# opportunities change, and ``REFACTORING_MODEL_VERSION`` moved with this.
+#
 # v36: files a package manifest declares (package.json ``bin``, a built
 # ``main`` mapped to its source, a distribution's package ``__init__``) are
 # entry points, so perf findings reachable from them are marked so.
@@ -333,7 +339,7 @@ log = structlog.get_logger(__name__)
 # forms. Files that were counted untested and are not become tested, which
 # moves untested-hotspot findings and the scores that carry them, on every
 # language with a prefix or spec convention rather than Ruby alone.
-HEALTH_ANALYZER_VERSION = 36
+HEALTH_ANALYZER_VERSION = 37
 
 
 def walked_functions(
