@@ -293,7 +293,9 @@ hand found real differences between the two resolvers (a parameter shadowing a
 class of the same name, calls through structurally typed parameters), not a
 tooling fault. Because the check did not pass on TypeScript, no TypeScript number
 from this method is quoted anywhere. Go and TypeScript keep their numbers from the
-section above.
+section above. The preregistration asked for the check to pass before any new
+language was reported. We scored the other languages anyway and added the two
+per-language checks below, and the preregistration is published with that note.
 
 **Every language passed two checks before it was reported.** The declaration-line
 identity check, where the most common offset between our declaration lines and the
@@ -323,6 +325,10 @@ Further limits:
 - **One run per repository**, and recall varies with how many entry points and how
   much dynamic dispatch a codebase has. Do not compare recall across rows, and do
   not pool any column into one figure.
+- **jedi is not fully deterministic.** Rebuilding the httpx reference three times
+  gave 2,076 to 2,078 edges against 2,077 in the scored one, so a Python row can
+  move by a few tenths of a point on a rerun. A SCIP reference rebuilt from the
+  same index came out identical.
 - **Polly's recall is a floor.** Only four of its library projects built under the
   installed SDKs, so the reference covers a fraction of the repository.
 - **AutoMapper was measured at 14.0.0**, the newest release that builds without
