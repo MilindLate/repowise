@@ -12,14 +12,16 @@ says **not measured** rather than carrying a checkmark.
 
 ## The scoreboard
 
-**Six of the thirteen rows below are wins against a named competitor. Two are
-losses, one is level, three are not measured, and one is a ratio against no tool
-at all.** They sit in one table on purpose: a page that reports only its wins is
-marketing with a sample size attached.
+**Six of the fifteen rows below are wins against a named competitor. Two are
+losses, one is level, three are not measured, and three are measured against no
+tool at all: a token ratio, our own call-graph accuracy per language, and what an
+index costs on large repositories.** They sit in one table on purpose: a page that
+reports only its wins is marketing with a sample size attached.
 
 | Question | Measured against | Result |
 |---|---|---|
-| **Are the call edges true, judged by a compiler** | CodeGraph, codebase-memory-mcp, Graphify, code-review-graph | [**we win**](#is-the-call-graph-correct). No tool that finds as much of the graph gets more of it right, in all 7 cells |
+| **Are the call edges true, judged by a compiler** (Go and TypeScript, five tools) | CodeGraph, codebase-memory-mcp, Graphify, code-review-graph | [**we win**](#is-the-call-graph-correct). No tool that finds as much of the graph gets more of it right, in all 7 cells |
+| **How accurate is our call graph in each language** | no competitor, Repowise only | [**six more languages**](#by-language), precision and recall per language, graded against each compiler (type inference for Python), held-out repositories reported apart |
 | **Are the call edges true, hand-graded from source** | CodeGraph | [**we win**](#7-edge-precision), 85.7% against 58.6%, 560 rows read on both sides |
 | **Finding the right files** | CodeGraph, Graphify, code-review-graph, cocoindex | [**we win**](#1-finding-the-right-files), n=42 held out, p=0.00004 |
 | **Work saved in a real agent loop** | the same field plus Serena and a bare agent | [**we win**](#2-what-changes-in-a-real-agent-loop) on all three agent harnesses we tried, n=43 at p&lt;0.0001 |
@@ -29,6 +31,7 @@ marketing with a sample size attached.
 | **Speed to build the graph** | the same four graph tools | [**level**](#what-it-costs-to-run). Fastest on 14 of 35 repositories, CodeGraph on 16 |
 | **How much of the call graph we find** | the same four graph tools | [**we lose**](#is-the-call-graph-correct). Two tools draw a bigger map, and we publish what their extra edges cost them |
 | **Time to build the full index** | CodeGraph, Graphify, code-review-graph | [**we lose**](#what-it-costs-to-run), 22x, because we build five layers where they build one |
+| **Indexing a large repository** | no competitor, Repowise only | [**34,315 files in 54 minutes at 9.8 GiB**](#scale) on a laptop, measured up to that size and no further |
 | **Command-output compression** | RTK | [**not measured**](#command-output-compression) head to head |
 | **Documentation generation** | DeepWiki, Google Code Wiki, Swimm | **not measured** |
 | **PR review** | CodeRabbit, Greptile | **not measured** |
@@ -148,9 +151,10 @@ these cells would be meaningless.
 
 Further limits:
 
-- **Two languages, seven cells, five repositories.** This is not a nine-language
-  claim and must not be quoted as one. The hand-graded audit below is the
-  nine-language number.
+- **Two languages, seven cells, five repositories.** The five-tool comparison is
+  not a nine-language claim and must not be quoted as one. The hand-graded audit
+  below is the nine-language comparison. The [per-language table](#by-language)
+  reaches six more languages, for Repowise alone.
 - **A contradicted edge is very strong evidence, not proof.** RTA is unsound under
   reflection and `go:linkname`, so a genuinely dynamic edge can land in that
   bucket. It applies to all five arms equally and the gaps are far too large to be
@@ -163,11 +167,12 @@ Further limits:
 - **A library has no `main`, so RTA has no roots**; cobra is analysed through its
   test binaries only, and the two variants of a repository answer different
   questions, so report both or say which you used.
-- **Two oracle languages, and the programme stops at two.** The other corpus
-  languages either need a per-repository build that does not exist on the
-  measurement machine, have no sound call-graph tool (Rust), or admit no oracle
-  even in principle (Python, Ruby, PHP). The hand-graded audit below is the
-  permanent method there, not a stopgap.
+- **The five-tool comparison stays at two languages.** Grading more languages
+  needed a build per repository and a compiler-backed indexer for each. We did
+  that for Java, C#, C, C++ and Rust, plus a type-inference reference for Python,
+  for Repowise alone, in [the table below](#by-language). No competitor was run
+  there. Ruby and PHP still have no answer key. Outside Go and TypeScript, the
+  hand-graded audit remains the only comparison against another tool.
 - **The TypeScript with-tests variants are void and quoted nowhere.** The pinned
   corpus installs no dependencies, so a third of call sites go unresolvable.
 - **The three newer competitors are priced on these two languages only**, and
@@ -190,15 +195,166 @@ missed:
 
 ---
 
+<a id="by-language"></a>
+
+## Graded against each language's compiler
+
+The comparison above is Go and TypeScript because those are the languages where
+all five tools could be run against an answer key. This section asks a narrower
+question in more languages: how accurate is Repowise's own call graph, judged by
+each language's own compiler. No competitor was run here. Nothing in this table is
+a comparison, and it should not be set beside the five-tool table as if it were
+the same experiment.
+
+| Language | Graded against | Repository | Set | Precision [95% CI] | Recall [95% CI] | Overload-set P / R |
+|---|---|---|---|---|---|---|
+| C | clang | git 2.56.0 | held out | **0.981** [0.979, 0.983] | 0.618 [0.612, 0.624] | no overloads |
+| C | clang | redis 8.10.2 | dev | 0.946 [0.943, 0.949] | 0.536 [0.531, 0.541] | no overloads |
+| C++ | clang | fmt 12.2.0 | dev | 0.709 [0.674, 0.741] | 0.311 [0.289, 0.335] | not computed |
+| C++ | clang | | held out | not yet measured | not yet measured | |
+| C# | Roslyn | AutoMapper 14.0.0 | held out | 0.827 [0.802, 0.850] | 0.255 [0.240, 0.270] | 0.858 / 0.323 |
+| C# | Roslyn | FluentValidation 12.1.0 | dev | 0.869 [0.827, 0.903] | 0.423 [0.385, 0.462] | 0.941 / 0.498 |
+| C# | Roslyn | Polly 8.8.0 | dev | 0.774 [0.709, 0.827] | 0.125 [0.108, 0.146], a floor | 0.911 / 0.156 |
+| Java | javac | javapoet 1.13.0 | held out | 0.427 [0.392, 0.462] | 0.461 [0.425, 0.498] | 0.552 / 0.623 |
+| Java | javac | jsoup 1.23.2 | dev | 0.542 [0.527, 0.557] | 0.516 [0.501, 0.531] | 0.667 / 0.643 |
+| Java | javac | gson 2.14.0 | dev | 0.549 [0.528, 0.570] | 0.649 [0.626, 0.671] | 0.607 / 0.724 |
+| Python | jedi, type inference | typer 0.27.2 | held out | 0.943 [0.931, 0.953] | 0.770 [0.752, 0.788] | no overloads |
+| Python | jedi, type inference | attrs 26.1.0 | held out | 0.498 [0.467, 0.529] | 0.368 [0.342, 0.394] | no overloads |
+| Python | jedi, type inference | httpx 0.28.1 | dev | 0.970 [0.959, 0.978] | 0.691 [0.669, 0.713] | no overloads |
+| Python | jedi, type inference | click 8.5.0 | dev | 0.936 [0.923, 0.947] | 0.700 [0.681, 0.719] | no overloads |
+| Rust | rust-analyzer | ripgrep 15.2.0 | dev | 0.825 [0.810, 0.839] | 0.456 [0.442, 0.471] | no overloads |
+| Rust | rust-analyzer | fd 10.5.0 | dev | 0.907 [0.847, 0.945] | 0.546 [0.481, 0.608] | no overloads |
+| Rust | rust-analyzer | | held out | not yet measured | not yet measured | |
+
+**Held-out repositories were never opened while improving anything.** They were
+picked before the work started and measured once. Dev repositories are the ones we
+read to find the patterns behind wrong and missing edges. Every number in the
+table, dev and held out alike, is the released code (repowise 0.54.0), measured
+before any fix that came out of that reading.
+
+**How it is scored.** Call sites come from the syntax tree, using the same
+tree-sitter queries Repowise itself uses. The target of each call comes from the
+compiler's own resolution, read from a SCIP index: scip-java over javac,
+scip-dotnet over Roslyn, scip-clang over clang, and rust-analyzer's own SCIP
+output. Both sides are compared edge by edge on declaration location: the file and
+line where the calling function is declared, and the file and line where the
+called one is. **Precision** is the share of our call edges the compiler confirms.
+**Recall** is the share of the compiler's in-repository call edges we found. A
+function where the compiler could not resolve every call site is unjudged, and
+its edges are charged to nobody. Calls into the standard library and dependencies
+are excluded on both sides.
+
+**Python is graded against type inference, not a compiler.** Python has no
+compiler that resolves calls, so the reference is jedi, a static type-inference
+engine. We read its answers against source on the same sites and found no errors
+in them. Even so it is a type-inference reference, and a call that only resolves
+at runtime is outside what it can see.
+
+**Overloads.** Repowise currently keeps one graph node per overload set:
+`notNull(Object)` and `notNull(Object, String)` are one node. A compiler picks the
+exact overload, so the strict score counts a call bound to the right method and
+the wrong overload as wrong. The last column scores the same edges with all
+overloads of one method treated as one target. Both are shown because both are
+true: the strict number is the graph an agent sees today, and the gap between the
+two is how much of the loss is that one identity decision. It moves C# from 0.83
+to 0.86 held out and Java from 0.43 to 0.55. C, Python and Rust have no overload
+sets to group, and the C++ scorer does not group them yet, so the C++ row is
+strict only.
+
+What the table says:
+
+- **C, graded against the C compiler:** on git, held out, clang confirms 98.1% of
+  our call edges and we find 61.8% of clang's.
+- **Python** is at 0.94 or above on three of four repositories and at 0.50 on
+  attrs. attrs exports its public API through chained aliases
+  (`s = attributes = attrs`), and Repowise binds those calls to the alias line
+  instead of the function behind it. That one pattern is 68% of the wrong edges on
+  attrs. It was found on a held-out repository, so the number stays as measured.
+- **Java** is the lowest in the table, 0.43 to 0.55 strict. Overload sets are part
+  of it. The rest is method calls bound by name without knowing the receiver's
+  type, which is also the main source of wrong edges in our Rust rows.
+- **Recall is below 0.80 in every row.** That is the half of the pair we plan
+  against.
+
+Fixes for several of these patterns are in progress. None of them is in these
+numbers.
+
+<details>
+<summary><b>Method, limits, and what this does not show</b></summary>
+
+**The method was checked against the Go and TypeScript answer keys before any new
+language was scored.** On gitleaks it lands within 1.4 points of the Go call graph
+used above, on both precision and recall, and the residual has a known cause: the
+Go key only judges code reachable from `main`, while this one judges every call
+the compiler resolves. On zod it did not agree, by 19 points of precision and 21
+of recall. A full
+dependency install changed nothing, and reading 40 of the disagreeing edges by
+hand found real differences between the two resolvers (a parameter shadowing a
+class of the same name, calls through structurally typed parameters), not a
+tooling fault. Because the check did not pass on TypeScript, no TypeScript number
+from this method is quoted anywhere. Go and TypeScript keep their numbers from the
+section above.
+
+**Every language passed two checks before it was reported.** The declaration-line
+identity check, where the most common offset between our declaration lines and the
+compiler's must be (0, 0), with 20 identities confirmed by hand. And a hand reading
+of 20 edges the compiler contradicts and 10 it says we missed, to find errors in
+the reference itself. None were found in any language. Polly was read at 10 and 5.
+The javapoet and AutoMapper held-out rows passed the identity check, and the edge
+reading has not been done on them yet.
+
+**The references make known mistakes, and they charge them to us.** scip-clang
+merges same-named `static` functions from different files into one symbol (1.4%
+of the reference edges on redis), and scip-dotnet gives `IFoo` and `IFoo<T>` one
+symbol. Neither is corrected in the table. scip-python 0.6.6 was the first Python
+reference and was dropped after we confirmed it dropped class definitions and sent
+calls through star re-exports to the wrong class.
+
+**Where two methods exist, they do not always agree.** Against the hand-graded
+audit below, C++, Python on three of its four repositories, and Rust on ripgrep
+land inside the hand-graded interval. Java and C# do not: hand-graded at 75% and
+100%, against 0.43 to 0.55 and 0.77 to 0.87 here. The hand-graded rows come from different repositories, and a person
+reading a call bound to an overloaded method sees one node for the whole set. We
+have not yet measured which of those accounts for the gap. Until we have, the
+figure in this table is the one to plan against for Java and C#.
+
+Further limits:
+
+- **One run per repository**, and recall varies with how many entry points and how
+  much dynamic dispatch a codebase has. Do not compare recall across rows, and do
+  not pool any column into one figure.
+- **Polly's recall is a floor.** Only four of its library projects built under the
+  installed SDKs, so the reference covers a fraction of the repository.
+- **AutoMapper was measured at 14.0.0**, the newest release that builds without
+  .NET 10. The compiler leaves 59% of our edges there unjudged, in a codebase heavy
+  with generics and expression trees. We have not investigated why.
+- **The C++ and Rust held-out rows are not yet measured.** re2 needs abseil built
+  first, and the Rust held-out pair was not reached. Kotlin, Swift, Ruby and PHP are
+  not in the table.
+- **Only `calls` edges are scored.** `references`, `dispatches_to` and
+  `framework_binds` edges are excluded.
+
+Reference tools as run: scip-java 0.13.1 on JDK 21, scip-dotnet 0.2.14 on .NET SDK
+8.0.425, scip-clang 0.3.1 over clang compile databases, rust-analyzer 1.96.0,
+jedi 0.20.0, SCIP schema 0.10.0. Per-repository pins, scores, identity checks and
+the scoring code:
+**[graph/experiments/g9-language-oracles](https://github.com/repowise-dev/repowise-bench/tree/master/graph/experiments/g9-language-oracles)**.
+
+</details>
+
+---
+
 <a id="7-edge-precision"></a>
 
 ## The same question, hand-graded across nine languages
 
 **Two sections ask whether the edges are true, because there are two ways to
-find out and each covers what the other cannot.** Above, a compiler is the judge
-across five tools, which is unarguable but reaches only two languages. Here,
-people read the source across nine languages and two tools, which reaches far
-wider but is graded by us. Where both exist they agree to within about a point.
+find out and each covers what the other cannot.** Above, a compiler is the judge.
+Against five tools that reaches two languages, and for Repowise alone it reaches
+six more. Here, people read the source across nine languages and two tools, which
+compares us with another tool far more widely but is graded by us. On Go they
+agree to within about a point. On Java and C# they do not, and
+[the per-language section](#by-language) says by how much.
 
 30 rows per language per tool, seed 2026, stratified by resolution strategy,
 every row read from source with its imports and enclosing scope open.
@@ -225,7 +381,9 @@ second one.
 
 **Read our number the other way round: roughly fourteen percent of our call edges
 are wrong.** That is the number we plan against, and rust, cpp and java are where
-it concentrates.
+it concentrates. Graded against each compiler, the same three are below 0.91 on
+every repository measured, and C# joins them, so the concentration holds and is
+wider than this audit shows.
 
 **Four of nine cells separate. Five are ties and we report them as ties.** At n=30
 the interval runs about ±16 points near 60%, so a point-estimate gap inside two
@@ -244,9 +402,10 @@ sides read 10/10 and they resolve 24,950 distinct call edges to our 9,486.
 Precision is not the only reading.
 
 **This audit was graded by us, on both sides.** That is the strongest form of a
-weak thing, and it is exactly what the oracle section above exists to check. The
-two agree where both exist, to within about a point, but only the oracle has an
-answer key we did not produce.
+weak thing, and it is exactly what the compiler sections above exist to check. On
+Go the two agree to within about a point. On Java and C# the compiler reads us
+well below this audit, and for those two languages the compiler figure is the one
+to use. Only the compiler has an answer key we did not produce.
 
 **All nine cells are measured at one commit**, and the resolver has moved since.
 Every corpus repository's call population was diffed site by site against the
@@ -655,7 +814,9 @@ edges than we do on several repositories.
 
 **The corpus caps near 2,000 files**, so genuinely large-repository behaviour is
 measured on the top 10 of 35 rather than at scale. Single machine, single OS: the
-memory ratios are unlikely to invert but absolute numbers will move.
+memory ratios are unlikely to invert but absolute numbers will move. The
+[scale section](#scale) below indexes two repositories of 15,510 and 34,315
+files, for Repowise alone.
 
 A fitted build-cost curve for five tools across a 12x repository-size range, which
 nobody in this field had published, is in
@@ -666,6 +827,56 @@ finding against us.
 
 Full per-repository tables:
 **[graph/experiments/g6-build-cost](https://github.com/repowise-dev/repowise-bench/tree/master/graph/experiments/g6-build-cost)**.
+
+</details>
+
+---
+
+<a id="scale"></a>
+
+## Scale
+
+The benchmark corpus above stops near 2,000 files. To see what a large repository
+costs, we indexed two, once each, with no competitor alongside:
+
+| Repository | Tracked files | First index (wall) | Peak memory | Index on disk |
+|---|---:|---:|---:|---:|
+| dotnet/aspnetcore v8.0.31 | 15,510 | 20.3 min | 4.0 GiB | 1.4 GiB |
+| elastic/elasticsearch v8.19.22 | 34,315 | 54.1 min | 9.8 GiB | 4.2 GiB |
+
+That is about 0.26 to 0.29 GiB of peak memory and 78 to 95 seconds of wall time
+per 1,000 files. Both rates rise a little with size, so cost grows slightly faster
+than file count, and two points are not enough to fit a curve. Mining git history
+is the largest single stage on both, 50% and 42% of the time.
+
+**The ceiling.** Repositories above about 50,000 files need more memory than a
+16 GB budget today. We have not indexed one yet, and larger runs are next. The
+elasticsearch run left about 3.2 GiB of the machine's 32 GB free, with other work
+running alongside it.
+
+**What the table leaves out.** It is the first index only. On the released build,
+the first `repowise update` after an index repeats most of that work even when
+nothing changed, and a one-file commit re-scores the whole repository, about eight
+minutes on aspnetcore. Once an update has run, a no-change update takes 4 seconds
+there. A fix for the first update is in progress. The one-file cost is not yet
+addressed.
+
+<details>
+<summary><b>Method, limits, and what this does not show</b></summary>
+
+**Keyless and index-only.** `repowise init --no-prose` with a mock embedder, so no
+model was called and no documentation prose was written. Everything else is the
+full index: graph, full git history, health, dead code and the structural wiki.
+Peak memory is the whole process tree, sampled while it ran.
+
+**The machine.** One Windows 11 laptop: AMD Ryzen 9 8940HX, 32 GB RAM, NVMe SSD,
+with the run held to 8 CPUs and two parse workers. Repowise 0.54.0. Wall time on
+the same machine can move by up to 2x between runs, so read the minutes as a
+range. Linux and macOS walls will differ.
+
+**One run per repository**, at the tags in the table. Git history cost depends on
+how much history a repository has as well as how many files: aspnetcore retains
+132,362 commits and elasticsearch 46,387.
 
 </details>
 
@@ -759,9 +970,10 @@ Raw CSV:
 <details>
 <summary><b>Four limits that are not specific to any one section</b></summary>
 
-- **Every retrieval number here is Python or Go.** The graph sections are wider, at
-  nine languages hand-graded and two compiler-graded, and they are the only
-  sections that are. A JavaScript/TypeScript corpus (`mui/material-ui`, six tools,
+- **Every retrieval number here is Python or Go.** The graph sections are wider:
+  nine languages hand-graded, two graded against a compiler across five tools, and
+  six more graded against each compiler (type inference for Python) for Repowise
+  alone. They are the only sections that are. A JavaScript/TypeScript corpus (`mui/material-ui`, six tools,
   a 12x size range) is built and half graded, but **its sealed half is unrun and
   nothing from it is quoted here.** Publishing the development half is what that
   split exists to prevent, so the row arrives when the sealed half is evaluated,
@@ -828,7 +1040,7 @@ invalidation notes attached.
 
 | Start here | For |
 |---|---|
-| **[graph/](https://github.com/repowise-dev/repowise-bench/tree/master/graph)** | The graph-quality bench: hand-graded precision across nine languages, the compiler oracle on Go and TypeScript, cross-file coverage and build cost across five tools |
+| **[graph/](https://github.com/repowise-dev/repowise-bench/tree/master/graph)** | The graph-quality bench: hand-graded precision across nine languages, the compiler oracle on Go and TypeScript, per-language precision and recall against each compiler for Repowise alone, cross-file coverage and build cost across five tools |
 | **[head-to-head](https://github.com/repowise-dev/repowise-bench/tree/master/head-to-head)** | The retrieval and agent-loop bench: who wins what, what each index can rank at all, and what it all cost to produce |
 | **[results/bakeoff\_2026\_08](https://github.com/repowise-dev/repowise-bench/tree/master/results/bakeoff_2026_08)** | Every graded cell and every verbatim response |
 | **[repro/README.md](https://github.com/repowise-dev/repowise-bench/blob/master/repro/README.md)** | Per claim: what it costs to reproduce, how long it takes, and which ones need credentials we cannot hand you |
@@ -838,7 +1050,9 @@ Adding a competitor is a YAML block, no Python and no runner change. See
 [CONTRIBUTING.md](https://github.com/repowise-dev/repowise-bench/blob/master/CONTRIBUTING.md).
 
 <sub>Tool versions as measured: CodeGraph 1.5.0, Graphify 0.9.31, Serena 1.6.2.dev0,
-code-review-graph 2.3.7, cocoindex as of 2026-08-09, codebase-memory-mcp 0.10.8.</sub>
+code-review-graph 2.3.7, cocoindex as of 2026-08-09, codebase-memory-mcp 0.10.8.
+Per-language references: scip-java 0.13.1, scip-dotnet 0.2.14, scip-clang 0.3.1,
+rust-analyzer 1.96.0, jedi 0.20.0.</sub>
 
 ## See also
 
