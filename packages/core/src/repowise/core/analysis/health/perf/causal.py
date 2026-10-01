@@ -17,6 +17,7 @@ import hashlib
 import json
 import re
 from collections import defaultdict
+from itertools import pairwise
 from typing import Any, Literal
 
 from repowise.core.test_paths import is_test_related_path
@@ -41,8 +42,29 @@ _ID_PREFIX = "perf"
 _ID_PATTERN = re.compile(rf"^{_ID_PREFIX}(\d*)_[0-9a-f]{{20}}$")
 
 _TOOLING_PARTS = frozenset(
-    {".github", "benchmarks", "build", "devtools", "scripts", "tooling", "tools"}
+    {
+        ".github",
+        "benchmarks",
+        "build",
+        "devtools",
+        # Schema migrations run once per deploy, not per request: Django and
+        # Flask-Migrate ``migrations/``, EF Core ``Migrations/``.
+        "migrations",
+        "scripts",
+        "tooling",
+        "tools",
+    }
 )
+
+_TOOLING_DIR_PAIRS = frozenset({("db", "migrate"), ("alembic", "versions")})
+"""Adjacent directories that mark migrations where neither name does alone.
+
+Rails keeps them in ``db/migrate``. Alembic keeps them in ``versions/`` under
+its script directory; a bare ``versions/`` is too common (API versions) to
+class on its own. Ceiling: an Alembic script directory with another name is
+recognised only by its sibling ``env.py``, which a path-only classifier cannot
+see.
+"""
 
 _UNCLASSIFIABLE_PARTS = frozenset(
     {
@@ -78,8 +100,11 @@ def execution_context(file_path: str) -> ExecutionContext:
         return "unknown"
     if is_test_related_path(file_path):
         return "test"
-    parts = {part.lower() for part in normalized.split("/")}
+    segments = normalized.lower().split("/")
+    parts = set(segments)
     if parts & _TOOLING_PARTS or "/cli/" in f"/{normalized.lower()}/":
+        return "tooling"
+    if any(pair in _TOOLING_DIR_PAIRS for pair in pairwise(segments[:-1])):
         return "tooling"
     if parts & _UNCLASSIFIABLE_PARTS or "/" not in normalized:
         return "unknown"

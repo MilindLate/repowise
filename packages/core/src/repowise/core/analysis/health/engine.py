@@ -104,7 +104,13 @@ log = structlog.get_logger(__name__)
 # Not a licence to move a calibrated scoring weight — those are frozen
 # independently of this stamp.
 #
-# Current stamp: which files are tests changed (``repowise.core.test_paths``).
+# Current stamp (v37): schema migrations are ``tooling`` in the performance
+# ``execution_context`` (any ``migrations/`` directory, Rails ``db/migrate``,
+# Alembic ``alembic/versions``). The context is stored on every performance
+# opportunity and is a kernel input to its id, so a v36 store holds those
+# opportunities as ``production`` under ids this version no longer mints.
+#
+# v36 (also): which files are tests changed (``repowise.core.test_paths``).
 # Compound directories headed by a test word (``e2e-tests/``, ``pkg_tests/``,
 # ``integration_test/``) became test trees, and ``test``/``.test.`` filenames
 # stopped counting on configuration (``tsconfig.test.json``, a workflow's
@@ -333,7 +339,7 @@ log = structlog.get_logger(__name__)
 # forms. Files that were counted untested and are not become tested, which
 # moves untested-hotspot findings and the scores that carry them, on every
 # language with a prefix or spec convention rather than Ruby alone.
-HEALTH_ANALYZER_VERSION = 36
+HEALTH_ANALYZER_VERSION = 37
 
 
 def walked_functions(
