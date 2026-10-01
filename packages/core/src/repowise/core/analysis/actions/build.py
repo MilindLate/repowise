@@ -64,6 +64,7 @@ from typing import Any
 from repowise.core.analysis.dead_code.risk_factors import REVIEW_ONLY_KINDS
 from repowise.core.analysis.finding_registry import excluded_types
 from repowise.core.analysis.health.models import primary_finding, split_by_origin
+from repowise.core.analysis.health.perf.opportunity_rank import default_queue_exclusion
 from repowise.core.analysis.health.rows import detail_map, field
 from repowise.core.analysis.health.scoring import HISTORY_CATEGORY, biomarker_category
 from repowise.core.author_identity import author_identity_key
@@ -310,14 +311,10 @@ def build_recent(
 
 
 def build_perf(rows: Rows) -> dict[str, Any]:
-    """Open production opportunities that are ready to plan or advise on."""
+    """Open opportunities in the performance default queue: production, with a strategy."""
     out = []
     for r in rows:
-        if not (
-            _open(r)
-            and field(r, "execution_context") == "production"
-            and field(r, "actionability_state") in ("plan_ready", "advisory")
-        ):
+        if not _open(r) or default_queue_exclusion(r) is not None:
             continue
         details = detail_map(r)
         facets = details.get("facets") or {}

@@ -25,6 +25,7 @@ from repowise.core.analysis.health.perf.opportunities import (
     PERFORMANCE_MODEL_VERSION,
     model_state,
 )
+from repowise.core.analysis.health.perf.opportunity_rank import DEFAULT_QUEUE_STATES
 from repowise.core.analysis.health.rows import detail_map
 from repowise.core.persistence.crud import (
     get_performance_opportunity,
@@ -69,8 +70,9 @@ _CONFIDENCES = ("high", "medium", "low")
 _ACTIONABILITIES = ("plan_ready", "advisory", "investigate", "expected")
 _BOUNDARIES = ("db", "network", "filesystem", "subprocess", "lock", "none")
 
-_DEFAULT_ACTIONABILITIES = frozenset({"plan_ready", "advisory", "investigate"})
-"""``expected`` rows are true but offer nothing to change, so they are asked for, not queued."""
+_DEFAULT_ACTIONABILITIES = DEFAULT_QUEUE_STATES
+"""``expected`` rows offer nothing to change and ``investigate`` rows no strategy to apply,
+so both are asked for, not queued. The summary's ``default_queue`` counts each one left out."""
 
 _PLAN_REASONS = {
     "available": "A stored performance plan addresses this exact opportunity.",
@@ -413,6 +415,7 @@ class PerformanceHealthService:
             "advisory_total": counts.get("advisory", 0),
             "investigate_total": counts.get("investigate", 0),
             "expected_total": counts.get("expected", 0),
+            **({"default_queue": summary["default_queue"]} if "default_queue" in summary else {}),
         }
         if summary["status"] == "stale_model":
             return {
@@ -430,7 +433,12 @@ class PerformanceHealthService:
                 "status": "clear",
                 # Never "fast": the analysis found no supported pattern, which
                 # is not a measurement of how this code runs.
-                "detail": "No supported open pattern surfaced.",
+                "detail": "No supported open pattern surfaced."
+                if not summary["total"]
+                else (
+                    "Nothing in the default queue can lead. default_queue counts what it "
+                    "leaves out; a context or actionability filter lists it."
+                ),
             }
         return {
             **base,
@@ -627,6 +635,7 @@ def _summary_of(row: Any) -> dict[str, Any]:
         "context": payload.get("context", {}),
         "boundary": payload.get("boundary", {}),
         "with_plan_total": payload.get("with_plan_total", 0),
+        **({"default_queue": payload["default_queue"]} if "default_queue" in payload else {}),
         **(
             {"refresh_required": True, "detail": "Run repowise update to rescore."}
             if stale
