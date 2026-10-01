@@ -533,9 +533,9 @@ score.
 
 **Soundness limits, by design.** Performance is a static signal, so it
 under-reports rather than over-reports. Dynamic dispatch, monkeypatching and
-callbacks-as-values produce no call edge and are invisible; ORM lazy-load N+1
-fires on attribute access with no visible call and is explicitly out of scope;
-chains beyond three hops are not followed; an unmodelled library has no
+callbacks-as-values produce no call edge and are invisible; an ORM lazy load is
+caught only when the query that produced the rows is visible in the same
+function (below); chains beyond three hops are not followed; an unmodelled library has no
 classified sinks. We call this performance **risk**, never measured performance,
 and it never folds into the defect score.
 
@@ -566,6 +566,16 @@ code, in the same function or one same-file helper. It is the one shape here
 that is not a loop around I/O: the query runs once and returns too much, and
 the fix is to select one row per key in the database.
 
+**Lazy loads.** `lazy_load_in_loop` (Python: sync SQLAlchemy and Django) flags a
+relationship declared lazy and read on every iteration of a loop over the rows
+of a query that did not load it, and names the eager load that replaces it
+(`selectinload(...)`, `select_related(...)`). Each finding records its ORM in
+`details.orm`, and the weight and the right to lead are read per finding:
+Django measured 29/32 = 90.6% on a fresh held-out sample and carries weight 0.7
+and may lead; SQLAlchemy has fewer than 30 held-out labels and stays at the
+advisory 0.4 and never leads. One marker, one opportunity id: the ORM is a fact
+on the finding, not a second marker.
+
 Methodology and raw data:
 [perf-detection](https://github.com/repowise-dev/repowise-bench/tree/master/perf-detection).
 
@@ -574,10 +584,32 @@ Methodology and raw data:
 The web Code Health page has a dedicated **Performance** tab. It leads with a
 bounded list of causal opportunities rather than a flat wall of observations:
 the boundary and execution context, shared intervention, affected call-site and
-file totals, confidence, and resolution provenance. Production/tooling and test
-contexts are separate views. Expanding an opportunity shows caller-to-sink
-paths; raw findings remain canonical and load as a separately paged evidence
-drill-down.
+file totals, confidence, and resolution provenance. Expanding an opportunity
+shows caller-to-sink paths; raw findings remain canonical and load as a
+separately paged evidence drill-down.
+
+**One opportunity per intervention.** An opportunity is the place you edit,
+within one cost family and boundary: the function holding the loop, or a helper
+every caller reaches the sink through. The sinks it reaches, its call sites and
+co-signals of one family (`io_in_loop` with `nested_loop_with_io`) are members,
+so one loop reaching three sinks is one opportunity with three
+`terminal_sinks`, not three opportunities. Every opportunity names its
+`intervention_symbol` and `intervention_kind` (`function`, `shared_helper`, or
+`module` for top-level script code, named `<file>::__module__`). Two loops in one
+function are one edit site today, because findings carry the sink's line and not
+the loop's.
+
+**The default queue** (MCP `get_health`, the REST list, and the Overview's Do
+next) holds production opportunities with a strategy: `plan_ready` and
+`advisory`. Test, tooling and unclassified code, `expected` repetition and
+`investigate` causes (no supported strategy, so no safe plan) are one filter
+away, and the summary's `default_queue` block counts each reason it leaves out,
+so nothing is dropped silently. The dashboard directive leads with the head of
+that queue.
+
+**Order.** The queue is ranked by value (`rank_score`) first; actionability only
+breaks a tie, so at equal value a plan-ready cause comes before an advisory one,
+and a cheap plan never outranks a costlier cause.
 
 When the deterministic service can describe a safe intervention, the
 opportunity links by its exact stable `opportunity_id` to the matching
