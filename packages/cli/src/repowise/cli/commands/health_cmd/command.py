@@ -37,7 +37,10 @@ from repowise.core.analysis.health.scoring import compute_kpis
 
 from .codegen import _generate_refactoring_code
 from .persist import _load_persisted_coverage_map, _load_recommendations, _persist_health
-from .refactoring_targets import _render_refactoring_targets
+from .refactoring_targets import (
+    _render_refactoring_targets,
+    _render_stored_refactoring_targets,
+)
 from .summary import (
     _render_badge,
     _render_defect_accuracy_line,
@@ -80,7 +83,19 @@ from .trends import _render_trend
     "refactoring_targets",
     is_flag=True,
     default=False,
-    help="Print top refactoring candidates (impact/effort ratio).",
+    help=(
+        "Print the refactoring queue the index stored, in the order MCP and the "
+        "web UI serve it."
+    ),
+)
+@click.option(
+    "--recompute",
+    is_flag=True,
+    default=False,
+    help=(
+        "With --refactoring-targets: analyze the working tree in-process instead "
+        "of reading the index. Slow on a large repo; needed outside an indexed one."
+    ),
 )
 @click.option(
     "--generate-code",
@@ -145,6 +160,7 @@ def health_command(
     repo_alias: str | None,
     no_workspace: bool,
     refactoring_targets: bool,
+    recompute: bool,
     generate_code: str | None,
     module_filter: str | None,
     scope: str,
@@ -208,6 +224,22 @@ def health_command(
                 "do not apply to it.[/dim]"
             )
         _render_trend(repo_path, fmt=fmt)
+        return
+
+    if refactoring_targets and not recompute and generate_code is None:
+        # The stored queue is the calibrated reading, as on MCP and the web UI.
+        if parse_scope(scope) != DEFAULT_SCOPE or parse_counts(counts) != DEFAULT_COUNTS:
+            status.print(
+                "[dim]The stored queue does not take --scope or --counts; pass "
+                "--recompute to apply them.[/dim]"
+            )
+        if not _render_stored_refactoring_targets(
+            repo_path, fmt=fmt, file_filter=file_filter, module_filter=module_filter
+        ):
+            raise click.ClickException(
+                "No stored refactoring analysis for this repository. Run `repowise init` "
+                "or `repowise update`, or pass --recompute to analyze in-process."
+            )
         return
 
     # Analyze the same file set that was indexed: a repo initialized with
