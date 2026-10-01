@@ -125,6 +125,8 @@ log = structlog.get_logger(__name__)
 # public id change; top-level script code still carries none. It also carries
 # ``PERFORMANCE_MODEL_VERSION`` 3 (one opportunity per intervention), so every
 # stored opportunity id and the id stamped on every perf finding change.
+# ``lazy_load_in_loop`` findings carry ``details["orm"]``, which moves their
+# public ids and, for Django, their performance weight (0.4 -> 0.7).
 #
 # v36: files a package manifest declares (package.json ``bin``, a built
 # ``main`` mapped to its source, a distribution's package ``__init__``) are

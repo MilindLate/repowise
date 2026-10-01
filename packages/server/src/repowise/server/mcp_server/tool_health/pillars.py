@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from repowise.core.analysis.health.perf.opportunity_rank import NON_LEADING_MARKERS
 from repowise.core.analysis.health.refactoring.recommendations import Recommendation
 from repowise.server.mcp_server.tool_health.paging import Pager
 from repowise.server.mcp_server.tool_health.request import HealthRequest
@@ -281,7 +280,7 @@ def _recommendation_lede(
         (
             item
             for item in (performance.page.items if performance.page else [])
-            if item.get("biomarker_type") not in NON_LEADING_MARKERS
+            if item.get("may_lead", True)
         ),
         None,
     )
