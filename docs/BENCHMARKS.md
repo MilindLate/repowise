@@ -21,7 +21,7 @@ reports only its wins is marketing with a sample size attached.
 | Question | Measured against | Result |
 |---|---|---|
 | **Are the call edges true, judged by a compiler** (Go and TypeScript, five tools) | CodeGraph, codebase-memory-mcp, Graphify, code-review-graph | [**we win**](#is-the-call-graph-correct). No tool that finds as much of the graph gets more of it right, in all 7 cells |
-| **How accurate is our call graph in each language** | no competitor, Repowise only | [**six more languages**](#by-language), precision and recall per language, graded against each compiler (type inference for Python), held-out repositories reported apart |
+| **Our own call graph, graded against each language's compiler** | no competitor | [**six more languages**](#by-language), precision and recall in one table. Type inference stands in for a compiler on Python |
 | **Are the call edges true, hand-graded from source** | CodeGraph | [**we win**](#7-edge-precision), 85.7% against 58.6%, 560 rows read on both sides |
 | **Finding the right files** | CodeGraph, Graphify, code-review-graph, cocoindex | [**we win**](#1-finding-the-right-files), n=42 held out, p=0.00004 |
 | **Work saved in a real agent loop** | the same field plus Serena and a bare agent | [**we win**](#2-what-changes-in-a-real-agent-loop) on all three agent harnesses we tried, n=43 at p&lt;0.0001 |
@@ -855,17 +855,19 @@ per 1,000 files. Both rates rise a little with size, so cost grows slightly fast
 than file count, and two points are not enough to fit a curve. Mining git history
 is the largest single stage on both, 50% and 42% of the time.
 
-**The ceiling.** Repositories above about 50,000 files need more memory than a
-16 GB budget today. We have not indexed one yet, and larger runs are next. The
-elasticsearch run left about 3.2 GiB of the machine's 32 GB free, with other work
-running alongside it.
+**How far this goes.** We have measured up to 34,315 files and no further. At the
+measured rate, a 50,000-file repository would peak around 13 to 15 GiB. That is an
+estimate from two points, not a measurement, and the rate rises with size, so
+repositories in the 60,000 to 90,000-file range are estimated to exceed a 16 GB
+memory budget. Measuring those is next. The elasticsearch run left about 3.2 GiB
+of the machine's 32 GB free, with other work running alongside it.
 
-**What the table leaves out.** It is the first index only. On the released build,
-the first `repowise update` after an index repeats most of that work even when
-nothing changed, and a one-file commit re-scores the whole repository, about eight
-minutes on aspnetcore. Once an update has run, a no-change update takes 4 seconds
-there. A fix for the first update is in progress. The one-file cost is not yet
-addressed.
+**What the table leaves out.** On the released build, the first `repowise update`
+after an index repeats nearly the whole index even when nothing changed: on
+aspnetcore that was about 27 minutes for zero changed files. It is fixed in an
+upcoming release. A one-file commit also costs more than it should, about eight
+minutes on the same repository, because it re-scores the whole repository. Once
+an update has run, a no-change update takes 4 seconds there.
 
 <details>
 <summary><b>Method, limits, and what this does not show</b></summary>

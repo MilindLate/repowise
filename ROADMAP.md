@@ -165,7 +165,7 @@ The half of the roadmap that has nothing to do with procurement.
 |---|---|---|
 | Interface-dispatch recall | Exploring | The measured ceiling on our call-graph recall. On `syft`, 44% of what we miss is dynamic dispatch alone and a further 39% is dispatch with a closure at one end. Nobody in the [measured field](docs/BENCHMARKS.md#8-the-same-question-against-an-answer-key-we-do-not-control) has cleared it, at 6.5 possible targets per call site, and matching that recall naively means emitting six edges where one is right. |
 | A sealed JavaScript / TypeScript retrieval corpus | In development | Built and half graded. The sealed half is unrun, and nothing from it is quoted anywhere until it is evaluated, once. |
-| More compiler oracles for graph precision | Exploring | Go and TypeScript are done. C#, Java, Kotlin and C++ each need a toolchain and a working build per repository; Rust has the toolchain and no sound call-graph tool exists for it; Python, Ruby and PHP admit no oracle even in principle. The honest status is "probably not", not "planned". |
+| More compiler oracles for graph precision | Exploring | Go and TypeScript are done against five tools. Java, C#, C, C++ and Rust are [graded against the compiler](docs/BENCHMARKS.md#by-language) for Repowise alone, and Python against jedi's static type inference, which is not a compiler. Still open: held-out repositories for C++ and Rust, and Kotlin and Swift. Ruby and PHP have no reference that resolves calls statically. |
 | Session intelligence harvesting | Planned | Architectural decisions surfaced from AI coding sessions and proposed to the team knowledge base, so knowledge generated during agent work does not evaporate when the session ends |
 
 ---

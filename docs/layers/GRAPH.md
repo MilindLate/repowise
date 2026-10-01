@@ -149,12 +149,14 @@ cell, tied in one more, beaten in five by tools drawing much smaller graphs. And
 against the two tools the experiment started with, most precise in seven of
 seven, which is the narrower claim it should always be labelled as.
 
-**Two languages, and only two.** C#, Java, Kotlin and C++ each need a toolchain
-installed and a working build per repository, and nobody has done that here.
-Python, Ruby and PHP can never have an oracle at all, because what a call
-resolves to can change at runtime. That is a fact about those languages rather
-than a gap in the harness, and it is why the hand-graded reading below is
-permanent rather than a stopgap.
+**Two languages for the five-tool comparison.** Repowise alone is also graded
+against the compiler in Java, C#, C, C++ and Rust, and against jedi's static type
+inference in Python, in [a per-language table](../BENCHMARKS.md#by-language). No
+competitor was run there. Python's reference is type inference, not a compiler:
+a call that only resolves at runtime is outside what it can see. Ruby and PHP
+have no reference at all, and Kotlin and Swift are not graded yet. Outside Go and
+TypeScript, the hand-graded reading below is the only comparison with another
+tool.
 
 [The cells, the method and the graded pre-registration](../BENCHMARKS.md#8-the-same-question-against-an-answer-key-we-do-not-control)
 
@@ -434,11 +436,13 @@ graph, which is why the graph is reproducible and why indexing needs no API key.
   Each of them draws a much smaller graph, which is the whole reason, and it is
   stated above rather than left out. A precision figure quoted without the recall
   beside it is a misuse of this data, including by us.
-- **The compiler-graded reading covers two languages.** Go and TypeScript are the
-  only ones with an oracle, so on the other seventeen the precision figure is the
-  hand-graded one, at 30 rows per language. That is a smaller n and a method we
-  ran ourselves; the two agree to within a point where both exist, which is the
-  reason to trust the half where only one does.
+- **The compiler-graded comparison against other tools covers two languages.**
+  Repowise alone is also [graded per language](../BENCHMARKS.md#by-language) in
+  Java, C#, C, C++, Rust and (against type inference) Python. Elsewhere the
+  precision figure is the hand-graded one, at 30 rows per language, a smaller n
+  and a method we ran ourselves. On Go the two agree to within a point. On Java
+  and C# the compiler reads us well below the hand grade, and there the compiler
+  figure is the one to use.
 - **A competitor's coverage lead is only priced on two languages too.** The tool
   that beats us on cross-file coverage across 35 repositories has an
   oracle-anchored precision figure on go and typescript alone. That its extra
